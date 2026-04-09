@@ -1,5 +1,6 @@
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../../middlewares/auth";
+import { prisma } from "../../config/prisma";
 import {
     getRoutineTasks,
     addTask,
@@ -15,6 +16,8 @@ export const getRoutineTasksController = async (req: AuthRequest, res: Response,
         let childId = req.user!.userId;
         if (req.user!.role === "PARENT" && req.query.childId) {
             childId = req.query.childId as string;
+            const childVerify = await prisma.user.findFirst({ where: { id: childId, parentId: req.user!.userId } });
+            if (!childVerify) throw Object.assign(new Error("Unauthorized: Child not found or does not belong to you"), { status: 403 });
         }
         const tasks = await getRoutineTasks(childId);
         return res.json({ tasks });
@@ -26,6 +29,8 @@ export const addTaskController = async (req: AuthRequest, res: Response, next: N
         let childId = req.user!.userId;
         if (req.user!.role === "PARENT" && req.body.childId) {
             childId = req.body.childId;
+            const childVerify = await prisma.user.findFirst({ where: { id: childId, parentId: req.user!.userId } });
+            if (!childVerify) throw Object.assign(new Error("Unauthorized: Child not found or does not belong to you"), { status: 403 });
         }
         const { title, scheduledTime, iconName } = req.body;
         const task = await addTask(childId, title, scheduledTime, iconName);
@@ -38,6 +43,8 @@ export const deleteTaskController = async (req: AuthRequest<{ taskId: string }>,
         let childId = req.user!.userId;
         if (req.user!.role === "PARENT" && req.query.childId) {
             childId = req.query.childId as string;
+            const childVerify = await prisma.user.findFirst({ where: { id: childId, parentId: req.user!.userId } });
+            if (!childVerify) throw Object.assign(new Error("Unauthorized: Child not found or does not belong to you"), { status: 403 });
         }
         const { taskId } = req.params;
         const result = await deleteTask(childId, taskId);
@@ -50,6 +57,8 @@ export const getTodayRoutineController = async (req: AuthRequest, res: Response,
         let childId = req.user!.userId;
         if (req.user!.role === "PARENT" && req.query.childId) {
             childId = req.query.childId as string;
+            const childVerify = await prisma.user.findFirst({ where: { id: childId, parentId: req.user!.userId } });
+            if (!childVerify) throw Object.assign(new Error("Unauthorized: Child not found or does not belong to you"), { status: 403 });
         }
         const routine = await getTodayRoutine(childId);
         return res.json({ routine });
@@ -79,6 +88,8 @@ export const getRoutineProgressController = async (req: AuthRequest, res: Respon
         let childId = req.user!.userId;
         if (req.user!.role === "PARENT" && req.query.childId) {
             childId = req.query.childId as string;
+            const childVerify = await prisma.user.findFirst({ where: { id: childId, parentId: req.user!.userId } });
+            if (!childVerify) throw Object.assign(new Error("Unauthorized: Child not found or does not belong to you"), { status: 403 });
         }
         const progress = await getRoutineProgress(childId);
         return res.json(progress);
