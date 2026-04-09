@@ -12,7 +12,10 @@ import {
 
 export const getRoutineTasksController = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const childId = req.user!.userId;
+        let childId = req.user!.userId;
+        if (req.user!.role === "PARENT" && req.query.childId) {
+            childId = req.query.childId as string;
+        }
         const tasks = await getRoutineTasks(childId);
         return res.json({ tasks });
     } catch (err) { next(err); }
@@ -20,7 +23,10 @@ export const getRoutineTasksController = async (req: AuthRequest, res: Response,
 
 export const addTaskController = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const childId = req.user!.userId;
+        let childId = req.user!.userId;
+        if (req.user!.role === "PARENT" && req.body.childId) {
+            childId = req.body.childId;
+        }
         const { title, scheduledTime, iconName } = req.body;
         const task = await addTask(childId, title, scheduledTime, iconName);
         return res.status(201).json(task);
@@ -29,7 +35,10 @@ export const addTaskController = async (req: AuthRequest, res: Response, next: N
 
 export const deleteTaskController = async (req: AuthRequest<{ taskId: string }>, res: Response, next: NextFunction) => {
     try {
-        const childId = req.user!.userId;
+        let childId = req.user!.userId;
+        if (req.user!.role === "PARENT" && req.query.childId) {
+            childId = req.query.childId as string;
+        }
         const { taskId } = req.params;
         const result = await deleteTask(childId, taskId);
         return res.json(result);
@@ -38,7 +47,10 @@ export const deleteTaskController = async (req: AuthRequest<{ taskId: string }>,
 
 export const getTodayRoutineController = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const childId = req.user!.userId;
+        let childId = req.user!.userId;
+        if (req.user!.role === "PARENT" && req.query.childId) {
+            childId = req.query.childId as string;
+        }
         const routine = await getTodayRoutine(childId);
         return res.json({ routine });
     } catch (err) { next(err); }
@@ -64,7 +76,10 @@ export const skipTaskController = async (req: AuthRequest<{ taskId: string }>, r
 
 export const getRoutineProgressController = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const childId = req.user!.userId;
+        let childId = req.user!.userId;
+        if (req.user!.role === "PARENT" && req.query.childId) {
+            childId = req.query.childId as string;
+        }
         const progress = await getRoutineProgress(childId);
         return res.json(progress);
     } catch (err) { next(err); }
