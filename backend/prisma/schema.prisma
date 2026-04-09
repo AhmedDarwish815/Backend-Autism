@@ -1,0 +1,561 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// Enums
+// ==========================================
+
+enum Role {
+  PARENT
+  CHILD
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum ActivityType {
+  LANGUAGE
+  GAME
+  TASK
+  ROUTINE
+  SKILL
+}
+
+enum ActivityStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+enum NotificationType {
+  SURVEY_REMINDER
+  ACTIVITY_REMINDER
+  NEW_POST
+  NEW_COMMENT
+  PROGRESS_UPDATE
+  SYSTEM
+}
+
+enum LearningCategory {
+  PEOPLE
+  SCHOOL
+  ANIMALS
+  COLORS
+  NUMBERS
+  ARABIC_ALPHABET
+  ENGLISH_ALPHABET
+  CONVERSATION
+  EMOTIONS
+  COMMUNICATION
+}
+
+enum RoutineStatus {
+  PENDING
+  COMPLETED
+  SKIPPED
+}
+
+enum BadgeType {
+  FIRST_STEPS
+  LEARNING_STAR
+  EARLY_BIRD
+  MEMORY_MASTER
+  PUZZLE_PRO
+  ROUTINE_CHAMPION
+  COMMUNICATION_HERO
+  EMOTIONS_EXPERT
+}
+
+// ==========================================
+// User & Authentication
+// ==========================================
+
+model User {
+  id         String  @id @default(uuid())
+  email      String  @unique
+  password   String
+  role       Role
+  isVerified Boolean @default(false)
+
+  fullName String?
+  phone    String?
+
+  parentId String?
+  parent   User?   @relation("ParentChildren", fields: [parentId], references: [id])
+  children User[]  @relation("ParentChildren")
+
+  childProfile ChildProfile?
+
+  refreshTokens      RefreshToken[]
+  passwordResets     PasswordResetToken[]
+  emailVerifications EmailVerificationToken[]
+
+  activities    Activity[]
+  posts         Post[]
+  likes         Like[]
+  comments      Comment[]
+  savedPosts    SavedPost[]
+  chatSessions  ChatSession[]
+  notifications Notification[]
+
+  // Child specific
+  routineTasks RoutineTask[] @relation("ChildRoutineTasks")
+  routineLogs  RoutineLog[]
+  rewards      Reward?
+  badges       Badge[]
+  learningLogs LearningLog[]
+  gameScores   GameScore[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+model ChildProfile {
+  id      String @id @default(uuid())
+  childId String @unique
+  child   User   @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  name        String
+  gender      Gender?
+  dateOfBirth DateTime?
+
+  surveyResponses   SurveyResponse[]
+  progressSnapshots ProgressSnapshot[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RefreshToken {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tokenHash String   @unique
+  revoked   Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  codeHash  String
+  used      Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model EmailVerificationToken {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ==========================================
+// Survey & Assessment
+// ==========================================
+
+model SurveyResponse {
+  id      String       @id @default(uuid())
+  childId String
+  child   ChildProfile @relation(fields: [childId], references: [childId], onDelete: Cascade)
+
+  answers Json
+
+  assessmentResult AssessmentResult?
+
+  createdAt DateTime @default(now())
+
+  @@index([childId])
+  @@index([createdAt])
+}
+
+model AssessmentResult {
+  id               String         @id @default(uuid())
+  surveyResponseId String         @unique
+  surveyResponse   SurveyResponse @relation(fields: [surveyResponseId], references: [id], onDelete: Cascade)
+
+  probability  Float
+  riskLevel    String
+  confidence   Float
+  summary      String @db.Text
+  modelName    String
+  modelVersion String
+
+  createdAt DateTime @default(now())
+
+  @@index([surveyResponseId])
+  @@index([createdAt])
+}
+
+// ==========================================
+// Activity & Progress
+// ==========================================
+
+model Activity {
+  id      String @id @default(uuid())
+  childId String
+  child   User   @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  type        ActivityType
+  name        String
+  description String?
+  status      ActivityStatus @default(NOT_STARTED)
+  progress    Int            @default(0)
+
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  duration Int?    @default(0)
+  notes    String?
+  metadata Json?
+
+  date      DateTime @default(now()) @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([childId, date])
+  @@index([childId, type, date])
+  @@index([status])
+}
+
+model ProgressSnapshot {
+  id      String       @id @default(uuid())
+  childId String
+  child   ChildProfile @relation(fields: [childId], references: [childId], onDelete: Cascade)
+
+  weekStartDate DateTime @db.Date
+  weekEndDate   DateTime @db.Date
+
+  languageProgress Int @default(0)
+  gamesProgress    Int @default(0)
+  tasksProgress    Int @default(0)
+  overallProgress  Int @default(0)
+
+  activitiesCompleted Int     @default(0)
+  totalActivities     Int     @default(0)
+  notes               String?
+  metadata            Json?
+
+  createdAt DateTime @default(now())
+
+  @@unique([childId, weekStartDate])
+  @@index([childId])
+  @@index([weekStartDate])
+}
+
+// ==========================================
+// Articles
+// ==========================================
+
+model Article {
+  id    String @id @default(uuid())
+  title String
+
+  content  String  @db.Text
+  excerpt  String?
+  imageUrl String?
+
+  category String?
+  tags     String[]
+
+  author    String?
+  source    String?
+  sourceUrl String?
+
+  featured    Boolean  @default(false)
+  publishedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([featured])
+  @@index([publishedAt])
+}
+
+// ==========================================
+// Community
+// ==========================================
+
+model Post {
+  id       String @id @default(uuid())
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  content  String  @db.Text
+  imageUrl String?
+
+  likesCount    Int @default(0)
+  commentsCount Int @default(0)
+  sharesCount   Int @default(0)
+
+  likes      Like[]
+  comments   Comment[]
+  savedPosts SavedPost[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model Like {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model Comment {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  content String @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model SavedPost {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+}
+
+// ==========================================
+// Chatbot
+// ==========================================
+
+model ChatSession {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title String?
+
+  messages ChatMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ChatMessage {
+  id        String      @id @default(uuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  role    String
+  content String @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+// ==========================================
+// Notifications
+// ==========================================
+
+model Notification {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    NotificationType
+  title   String
+  message String           @db.Text
+
+  relatedId   String?
+  relatedType String?
+  actionUrl   String?
+
+  read Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, read])
+  @@index([createdAt])
+}
+
+// ==========================================
+// Learning
+// ==========================================
+
+model LearningItem {
+  id       String           @id @default(uuid())
+  category LearningCategory
+
+  title    String
+  imageUrl String?
+  audioUrl String?
+  phrases  String[]
+
+  sortOrder Int @default(0)
+
+  learningLogs LearningLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([sortOrder])
+}
+
+model LearningLog {
+  id      String       @id @default(uuid())
+  childId String
+  child   User         @relation(fields: [childId], references: [id], onDelete: Cascade)
+  itemId  String
+  item    LearningItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  viewedAt DateTime @default(now())
+
+  @@index([childId])
+  @@index([itemId])
+}
+
+// ==========================================
+// Routine
+// ==========================================
+
+model RoutineTask {
+  id            String  @id @default(uuid())
+  title         String
+  description   String?
+  imageUrl      String?
+  iconName      String?
+  scheduledTime String?
+  sortOrder     Int     @default(0)
+  isDefault     Boolean @default(true)
+  childId       String?
+  child         User?   @relation("ChildRoutineTasks", fields: [childId], references: [id], onDelete: Cascade)
+
+  routineLogs RoutineLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sortOrder])
+  @@index([childId])
+}
+
+model RoutineLog {
+  id      String      @id @default(uuid())
+  childId String
+  child   User        @relation(fields: [childId], references: [id], onDelete: Cascade)
+  taskId  String
+  task    RoutineTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  status      RoutineStatus @default(PENDING)
+  date        DateTime      @default(now()) @db.Date
+  completedAt DateTime?
+
+  @@unique([childId, taskId, date])
+  @@index([childId, date])
+}
+
+// ==========================================
+// Rewards & Badges
+// ==========================================
+
+model Reward {
+  id      String @id @default(uuid())
+  childId String @unique
+  child   User   @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  stars      Int @default(0)
+  totalStars Int @default(0)
+  level      Int @default(1)
+
+  updatedAt DateTime @updatedAt
+}
+
+model Badge {
+  id      String @id @default(uuid())
+  childId String
+  child   User   @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  type     BadgeType
+  earnedAt DateTime  @default(now())
+
+  @@unique([childId, type])
+  @@index([childId])
+}
+
+// ==========================================
+// Games
+// ==========================================
+
+model GameScore {
+  id      String @id @default(uuid())
+  childId String
+  child   User   @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  gameType  String  // "PUZZLE" | "MEMORY" | "TIME"
+  score     Int     @default(0)
+  moves     Int?
+  timeSpent Int?    // seconds
+  completed Boolean @default(false)
+
+  playedAt DateTime @default(now())
+
+  @@index([childId, gameType])
+  @@index([playedAt])
+}
