@@ -76,6 +76,22 @@ enum BadgeType {
   EMOTIONS_EXPERT
 }
 
+enum AppSection {
+  HOME
+  GAMES
+  LEARNING
+  SKILLS
+  ROUTINE
+  PROFILE
+}
+
+enum DominantEmotion {
+  HAPPY
+  SAD
+  ANGRY
+  NEUTRAL
+}
+
 // ==========================================
 // User & Authentication
 // ==========================================
@@ -115,6 +131,7 @@ model User {
   badges       Badge[]
   learningLogs LearningLog[]
   gameScores   GameScore[]
+  aiSessions   AISession[]  @relation("ChildAISessions")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -558,4 +575,43 @@ model GameScore {
 
   @@index([childId, gameType])
   @@index([playedAt])
+}
+
+// ==========================================
+// AI Session Summary
+// ==========================================
+
+model AISession {
+  id      String @id @default(uuid())
+  childId String
+  child   User   @relation("ChildAISessions", fields: [childId], references: [id], onDelete: Cascade)
+
+  /// القسم اللي كان فيه الطفل
+  section AppSection
+
+  /// اسم اللعبة لو كان في games section (nullable)
+  game String?
+
+  startTime DateTime
+  endTime   DateTime
+
+  /// مدة الجلسة بالثواني
+  duration Int
+
+  /// نسبة التركيز (0.0 → 1.0)  مثلاً 0.78 = 78%
+  focusScore Float
+
+  /// التوزيع الكامل للمشاعر كـ JSON
+  /// { "happy": 0.5, "sad": 0.1, "angry": 0.1, "neutral": 0.3 }
+  emotionDistribution Json
+
+  /// أكثر مشاعر ظهرت خلال الجلسة
+  dominantEmotion DominantEmotion
+
+  createdAt DateTime @default(now())
+
+  @@index([childId])
+  @@index([childId, section])
+  @@index([childId, createdAt])
+  @@index([dominantEmotion])
 }

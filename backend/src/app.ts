@@ -16,6 +16,7 @@ import rewardsRoutes from "./modules/rewards/rewards.routes";
 import gamesRoutes from "./modules/games/games.routes";
 import progressRoutes from "./modules/progress/progress.routes";
 import articlesRoutes from "./modules/articles/articles.routes";
+import aiSessionRoutes from "./modules/ai-session/ai-session.routes";
 
 export const app = express();
 
@@ -41,6 +42,7 @@ app.use("/rewards", rewardsRoutes);
 app.use("/games", gamesRoutes);
 app.use("/progress", progressRoutes);
 app.use("/articles", articlesRoutes);
+app.use("/", aiSessionRoutes);       // POST /session-summary  |  GET /ai-sessions/:childId
 app.use(globalErrorHandler);
 
 export default app;
