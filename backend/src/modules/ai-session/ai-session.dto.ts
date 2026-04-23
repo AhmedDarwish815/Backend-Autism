@@ -21,35 +21,34 @@ const emotionDistributionSchema = z
     );
 
 // ==========================================
-// السيكشن المسموح بيه
+// السيكشن المسموح بيه (بنقبل lowercase)
 // ==========================================
 const appSectionEnum = z.enum([
-    "HOME",
-    "GAMES",
-    "LEARNING",
-    "SKILLS",
-    "ROUTINE",
-    "PROFILE",
-]);
+    "home", "games", "learning", "skills", "routine", "profile",
+    "HOME", "GAMES", "LEARNING", "SKILLS", "ROUTINE", "PROFILE"
+]).transform((val) => val.toUpperCase() as "HOME" | "GAMES" | "LEARNING" | "SKILLS" | "ROUTINE" | "PROFILE");
 
 // ==========================================
-// المشاعر الغالبة المسموح بيها
+// المشاعر الغالبة المسموح بيها (بنقبل lowercase)
 // ==========================================
-const dominantEmotionEnum = z.enum(["HAPPY", "SAD", "ANGRY", "NEUTRAL"]);
+const dominantEmotionEnum = z.enum([
+    "happy", "sad", "angry", "neutral",
+    "HAPPY", "SAD", "ANGRY", "NEUTRAL"
+]).transform((val) => val.toUpperCase() as "HAPPY" | "SAD" | "ANGRY" | "NEUTRAL");
 
 // ==========================================
 // Schema الأساسي للـ Request
 // ==========================================
 export const createAISessionSchema = z.object({
-    user_id: z.string().uuid({ message: "user_id must be a valid UUID" }),
+    user_id: z.string().min(1, { message: "user_id is required" }),
 
     section: appSectionEnum,
 
     game: z.string().trim().min(1).nullable().optional().default(null),
 
-    start_time: z.string().datetime({ message: "start_time must be a valid ISO datetime" }),
+    start_time: z.string().min(10, { message: "start_time must be provided" }),
 
-    end_time: z.string().datetime({ message: "end_time must be a valid ISO datetime" }),
+    end_time: z.string().min(10, { message: "end_time must be provided" }),
 
     duration: z
         .number()

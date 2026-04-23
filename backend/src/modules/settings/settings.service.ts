@@ -8,13 +8,42 @@ export const getProfile = async (userId: string) => {
     const user = await prisma.user.findUnique({
         where: { id: userId },
         select: {
-        id: true,
-        email: true,
-        fullName: true,
-        phone: true,
-        role: true,
-        isVerified: true,
-        createdAt: true,
+            id: true,
+            email: true,
+            fullName: true,
+            phone: true,
+            role: true,
+            isVerified: true,
+            createdAt: true,
+            updatedAt: true,
+            childProfile: {
+                select: {
+                    id: true,
+                    name: true,
+                    gender: true,
+                    dateOfBirth: true,
+                    createdAt: true,
+                    updatedAt: true,
+                },
+            },
+            children: {
+                select: {
+                    id: true,
+                    fullName: true,
+                    email: true,
+                    role: true,
+                    isVerified: true,
+                    createdAt: true,
+                    childProfile: {
+                        select: {
+                            id: true,
+                            name: true,
+                            gender: true,
+                            dateOfBirth: true,
+                        },
+                    },
+                },
+            },
         },
     });
 
@@ -54,12 +83,42 @@ export const updateProfile = async (
         where: { id: userId },
         data: updateData,
         select: {
-        id: true,
-        email: true,
-        fullName: true,
-        phone: true,
-        role: true,
-        updatedAt: true,
+            id: true,
+            email: true,
+            fullName: true,
+            phone: true,
+            role: true,
+            isVerified: true,
+            createdAt: true,
+            updatedAt: true,
+            childProfile: {
+                select: {
+                    id: true,
+                    name: true,
+                    gender: true,
+                    dateOfBirth: true,
+                    createdAt: true,
+                    updatedAt: true,
+                },
+            },
+            children: {
+                select: {
+                    id: true,
+                    fullName: true,
+                    email: true,
+                    role: true,
+                    isVerified: true,
+                    createdAt: true,
+                    childProfile: {
+                        select: {
+                            id: true,
+                            name: true,
+                            gender: true,
+                            dateOfBirth: true,
+                        },
+                    },
+                },
+            },
         },
     });
 
