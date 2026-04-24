@@ -6,6 +6,7 @@ import { z } from "zod";
 export const updateProfileSchema = z.object({
     body: z.object({
         fullName: z.string().min(2, "Full name must be at least 2 characters").optional(),
+        email: z.string().email("Invalid email format").optional(),
         phone: z.string().optional(),
     }),
 });

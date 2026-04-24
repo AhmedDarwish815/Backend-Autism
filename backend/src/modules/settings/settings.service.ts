@@ -61,6 +61,7 @@ export const updateProfile = async (
     userId: string,
     data: {
         fullName?: string;
+        email?: string;
         phone?: string;
     }
     ) => {
@@ -73,6 +74,16 @@ export const updateProfile = async (
         });
         }
         updateData.fullName = data.fullName.trim();
+    }
+
+    if (data.email !== undefined) {
+        const existing = await prisma.user.findUnique({
+            where: { email: data.email.trim().toLowerCase() },
+        });
+        if (existing && existing.id !== userId) {
+            throw Object.assign(new Error("Email already in use"), { status: 409 });
+        }
+        updateData.email = data.email.trim().toLowerCase();
     }
 
     if (data.phone !== undefined) {

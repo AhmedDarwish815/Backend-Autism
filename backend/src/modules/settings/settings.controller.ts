@@ -29,9 +29,9 @@ export const updateProfileController = async (
     ) => {
     try {
         const userId = req.user!.userId;
-        const { fullName, phone } = req.body;
+        const { fullName, email, phone } = req.body;
 
-        const user = await updateProfile(userId, { fullName, phone });
+        const user = await updateProfile(userId, { fullName, email, phone });
         return res.json(user);
     } catch (err) {
         next(err);
