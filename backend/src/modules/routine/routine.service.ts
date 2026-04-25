@@ -7,10 +7,30 @@ const getTodayDate = () => {
     return today;
 };
 
+export const getRoutineCatalog = async () => {
+    return prisma.routineTemplate.findMany({
+        orderBy: { sortOrder: "asc" },
+    });
+};
+
 export const getRoutineTasks = async (childId: string) => {
     return prisma.routineTask.findMany({
-        where: { OR: [{ isDefault: true }, { childId }] },
+        where: { childId },
         orderBy: { sortOrder: "asc" },
+    });
+};
+
+export const addTemplateToRoutine = async (childId: string, templateId: string) => {
+    const template = await prisma.routineTemplate.findUnique({ where: { id: templateId } });
+    if (!template) throw Object.assign(new Error("Template not found"), { status: 404 });
+    
+    return prisma.routineTask.create({
+        data: {
+            title: template.title,
+            imageUrl: template.imageUrl,
+            childId,
+            sortOrder: template.sortOrder,
+        },
     });
 };
 
@@ -23,7 +43,6 @@ export const addTask = async (childId: string, title: string, scheduledTime?: st
             title: title.trim(),
             scheduledTime: scheduledTime || null,
             iconName: iconName || null,
-            isDefault: false,
             childId,
             sortOrder: 99,
         },
@@ -33,10 +52,9 @@ export const addTask = async (childId: string, title: string, scheduledTime?: st
 export const deleteTask = async (childId: string, taskId: string) => {
     const task = await prisma.routineTask.findUnique({
         where: { id: taskId },
-        select: { id: true, isDefault: true, childId: true },
+        select: { id: true, childId: true },
     });
     if (!task) throw Object.assign(new Error("Task not found"), { status: 404 });
-    if (task.isDefault) throw Object.assign(new Error("Cannot delete default tasks"), { status: 403 });
     if (task.childId !== childId) throw Object.assign(new Error("Unauthorized"), { status: 403 });
 
     await prisma.routineTask.delete({ where: { id: taskId } });
@@ -46,7 +64,7 @@ export const deleteTask = async (childId: string, taskId: string) => {
 export const getTodayRoutine = async (childId: string) => {
     const today = getTodayDate();
     const tasks = await prisma.routineTask.findMany({
-        where: { OR: [{ isDefault: true }, { childId }] },
+        where: { childId },
         orderBy: { sortOrder: "asc" },
     });
     const logs = await prisma.routineLog.findMany({ where: { childId, date: today } });
@@ -92,7 +110,7 @@ export const skipTask = async (childId: string, taskId: string) => {
 export const getRoutineProgress = async (childId: string) => {
     const today = getTodayDate();
     const totalTasks = await prisma.routineTask.count({
-        where: { OR: [{ isDefault: true }, { childId }] },
+        where: { childId },
     });
     const completedTasks = await prisma.routineLog.count({
         where: { childId, date: today, status: "COMPLETED" },
@@ -104,7 +122,7 @@ export const getRoutineProgress = async (childId: string) => {
 const checkRoutineBadge = async (childId: string) => {
     const today = getTodayDate();
     const totalTasks = await prisma.routineTask.count({
-        where: { OR: [{ isDefault: true }, { childId }] },
+        where: { childId },
     });
     const completedTasks = await prisma.routineLog.count({
         where: { childId, date: today, status: "COMPLETED" },

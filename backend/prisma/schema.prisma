@@ -492,6 +492,18 @@ model LearningLog {
 // Routine
 // ==========================================
 
+model RoutineTemplate {
+  id          String   @id @default(uuid())
+  title       String
+  imageUrl    String?
+  sortOrder   Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
 model RoutineTask {
   id            String  @id @default(uuid())
   title         String
@@ -500,9 +512,8 @@ model RoutineTask {
   iconName      String?
   scheduledTime String?
   sortOrder     Int     @default(0)
-  isDefault     Boolean @default(true)
-  childId       String?
-  child         User?   @relation("ChildRoutineTasks", fields: [childId], references: [id], onDelete: Cascade)
+  childId       String
+  child         User    @relation("ChildRoutineTasks", fields: [childId], references: [id], onDelete: Cascade)
 
   routineLogs RoutineLog[]
 

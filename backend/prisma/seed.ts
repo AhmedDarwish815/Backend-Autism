@@ -282,6 +282,31 @@ async function main() {
         skipDuplicates: true,
     });
 
+    // ==========================================
+    // ROUTINE TEMPLATES
+    // ==========================================
+    console.log("🌱 Seeding Routine Templates...");
+
+    const routineTemplates = [
+        { title: "Wake Up", imageUrl: "assets/routines/wake-up.jpg", sortOrder: 1 },
+        { title: "Brush Teeth", imageUrl: "assets/routines/brush-teeth.jpg", sortOrder: 2 },
+        { title: "Eat", imageUrl: "assets/routines/eat.jpg", sortOrder: 3 },
+        { title: "Drink", imageUrl: "assets/routines/drink.jpg", sortOrder: 4 },
+        { title: "Dress", imageUrl: "assets/routines/dress.jpg", sortOrder: 5 },
+        { title: "Study", imageUrl: "assets/routines/study.jpg", sortOrder: 6 },
+        { title: "Play", imageUrl: "assets/routines/play.jpg", sortOrder: 7 },
+        { title: "Clean", imageUrl: "assets/routines/clean.jpg", sortOrder: 8 },
+        { title: "Bath", imageUrl: "assets/routines/bath.jpg", sortOrder: 9 },
+        { title: "Pray", imageUrl: "assets/routines/pray.jpg", sortOrder: 10 },
+        { title: "Sleep", imageUrl: "assets/routines/sleep.jpg", sortOrder: 11 },
+    ];
+
+    await prisma.routineTemplate.deleteMany({});
+    await prisma.routineTemplate.createMany({
+        data: routineTemplates,
+        skipDuplicates: true,
+    });
+
     console.log("✅ Seeding completed!");
 }
 

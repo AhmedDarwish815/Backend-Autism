@@ -9,7 +9,16 @@ import {
     completeTask,
     skipTask,
     getRoutineProgress,
+    getRoutineCatalog,
+    addTemplateToRoutine,
 } from "./routine.service";
+
+export const getRoutineCatalogController = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const catalog = await getRoutineCatalog();
+        return res.json({ catalog });
+    } catch (err) { next(err); }
+};
 
 export const getRoutineTasksController = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -21,6 +30,20 @@ export const getRoutineTasksController = async (req: AuthRequest, res: Response,
         }
         const tasks = await getRoutineTasks(childId);
         return res.json({ tasks });
+    } catch (err) { next(err); }
+};
+
+export const addTemplateToRoutineController = async (req: AuthRequest<{ templateId: string }>, res: Response, next: NextFunction) => {
+    try {
+        let childId = req.user!.userId;
+        if (req.user!.role === "PARENT" && req.body.childId) {
+            childId = req.body.childId;
+            const childVerify = await prisma.user.findFirst({ where: { id: childId, parentId: req.user!.userId } });
+            if (!childVerify) throw Object.assign(new Error("Unauthorized: Child not found or does not belong to you"), { status: 403 });
+        }
+        const { templateId } = req.params;
+        const task = await addTemplateToRoutine(childId, templateId);
+        return res.status(201).json(task);
     } catch (err) { next(err); }
 };
 

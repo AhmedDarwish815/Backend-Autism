@@ -7,10 +7,15 @@ import {
     completeTaskController,
     skipTaskController,
     getRoutineProgressController,
+    getRoutineCatalogController,
+    addTemplateToRoutineController,
 } from "./routine.controller";
 import { requireAuth } from "../../middlewares/auth";
 
 const router = Router();
+
+router.get("/catalog", requireAuth, getRoutineCatalogController);
+router.post("/catalog/:templateId", requireAuth, addTemplateToRoutineController);
 
 router.get("/tasks", requireAuth, getRoutineTasksController);
 router.post("/tasks", requireAuth, addTaskController);
