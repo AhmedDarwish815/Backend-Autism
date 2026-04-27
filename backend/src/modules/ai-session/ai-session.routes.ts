@@ -3,6 +3,7 @@ import {
     createSessionSummaryController,
     getAISessionsController,
     getAIDashboardController,
+    createAIReportAdapterController,
 } from "./ai-session.controller";
 import { requireAuth, requireParent } from "../../middlewares/auth";
 
@@ -32,6 +33,9 @@ const router = Router();
  * }
  */
 router.post("/session-summary", createSessionSummaryController);
+
+// هذا المسار مخصص لاستقبال التقارير من الموديل/الفلاتر بالصيغة اللي طلبتها مبرمجة الـ AI
+router.post("/api/reports", createAIReportAdapterController);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROTECTED  (للـ Parent بس)

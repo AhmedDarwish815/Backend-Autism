@@ -47,6 +47,79 @@ export const createSessionSummaryController = async (
 };
 
 // ==========================================
+// POST /api/reports
+// مسار مخصص لاستقبال البيانات مباشرة من الموديل بتاع البايثون أو الفلاتر بنفس الـ Format
+// ==========================================
+export const createAIReportAdapterController = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const { child_id, game_id, report_data } = req.body;
+
+        if (!child_id || !report_data) {
+            return res.status(400).json({ error: "Missing required fields: child_id, report_data" });
+        }
+
+        // 1. حساب وقت البداية والنهاية
+        const duration = report_data.duration_seconds || 60;
+        const endTime = new Date();
+        const startTime = new Date(endTime.getTime() - duration * 1000);
+
+        // 2. حساب نسبة التركيز من نسبة التشتت
+        const distraction = report_data.distraction_percentage || 0;
+        const focusScore = Math.max(0, Math.min(1, (100 - distraction) / 100)); // between 0.0 and 1.0
+
+        // 3. تحديد الشعور الغالب
+        const emotions = report_data.emotion_percentages || { happy: 0.25, sad: 0.25, angry: 0.25, neutral: 0.25 };
+        let dominantEmotion = "NEUTRAL";
+        let maxVal = -1;
+        for (const [key, value] of Object.entries(emotions)) {
+            if (typeof value === "number" && value > maxVal) {
+                maxVal = value;
+                dominantEmotion = key.toUpperCase();
+            }
+        }
+
+        // Validate enum for dominant_emotion
+        const validEmotions = ["HAPPY", "SAD", "ANGRY", "NEUTRAL"];
+        if (!validEmotions.includes(dominantEmotion)) {
+            dominantEmotion = "NEUTRAL";
+        }
+
+        // 4. تجهيز الـ DTO الأصلي بتاعنا
+        const sessionDto = {
+            user_id: child_id,
+            section: "GAMES", // Default to games if game_id is sent
+            game: game_id || "general_activity",
+            start_time: startTime.toISOString(),
+            end_time: endTime.toISOString(),
+            duration: duration,
+            focus_score: focusScore,
+            emotion_distribution: emotions,
+            dominant_emotion: dominantEmotion,
+        };
+
+        // 5. حفظ الجلسة باستخدام نفس الفانكشن بتاعتنا
+        const parsed = createAISessionSchema.safeParse(sessionDto);
+        if (!parsed.success) {
+            return res.status(422).json({
+                error: "Data transformation failed",
+                details: parsed.error.issues,
+            });
+        }
+
+        await saveAISession(parsed.data);
+
+        return res.status(201).json({ message: "تم حفظ التقرير بنجاح في قاعدة البيانات!" });
+    } catch (err) {
+        console.error("AI Report Error:", err);
+        return res.status(500).json({ error: "حدث خطأ أثناء الحفظ" });
+    }
+};
+
+// ==========================================
 // GET /ai-sessions/:childId
 // للـ Parent - يشوف قائمة الجلسات بتاعة الطفل
 // ==========================================
