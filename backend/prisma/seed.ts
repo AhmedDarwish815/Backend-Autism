@@ -93,34 +93,34 @@ async function main() {
     // ARABIC ALPHABET
     // ==========================================
     const arabicLetters = [
-        { letter: "أ", word: "أسد",    wordEn: "Lion" },
-        { letter: "ب", word: "بطة",    wordEn: "Duck" },
-        { letter: "ت", word: "تفاحة",  wordEn: "Apple" },
-        { letter: "ث", word: "ثعلب",   wordEn: "Fox" },
-        { letter: "ج", word: "جمل",    wordEn: "Camel" },
-        { letter: "ح", word: "حصان",   wordEn: "Horse" },
-        { letter: "خ", word: "خروف",   wordEn: "Sheep" },
-        { letter: "د", word: "دجاجة",  wordEn: "Chicken" },
-        { letter: "ذ", word: "ذئب",    wordEn: "Wolf" },
-        { letter: "ر", word: "رمانة",  wordEn: "Pomegranate" },
-        { letter: "ز", word: "زهرة",   wordEn: "Flower" },
-        { letter: "س", word: "سمكة",   wordEn: "Fish" },
-        { letter: "ش", word: "شمس",    wordEn: "Sun" },
-        { letter: "ص", word: "صقر",    wordEn: "Falcon" },
-        { letter: "ض", word: "ضفدع",   wordEn: "Frog" },
-        { letter: "ط", word: "طائر",   wordEn: "Bird" },
-        { letter: "ظ", word: "ظبي",    wordEn: "Deer" },
-        { letter: "ع", word: "عصفور",  wordEn: "Sparrow" },
-        { letter: "غ", word: "غزال",   wordEn: "Gazelle" },
-        { letter: "ف", word: "فراشة",  wordEn: "Butterfly" },
-        { letter: "ق", word: "قطة",    wordEn: "Cat" },
-        { letter: "ك", word: "كلب",    wordEn: "Dog" },
-        { letter: "ل", word: "ليمون",  wordEn: "Lemon" },
-        { letter: "م", word: "موز",    wordEn: "Banana" },
-        { letter: "ن", word: "نملة",   wordEn: "Ant" },
-        { letter: "هـ", word: "هرة",   wordEn: "Cat" },
-        { letter: "و", word: "وردة",   wordEn: "Rose" },
-        { letter: "ي", word: "يد",     wordEn: "Hand" },
+        { letter: "أ", word: "أسد", wordEn: "Lion" },
+        { letter: "ب", word: "بطة", wordEn: "Duck" },
+        { letter: "ت", word: "تفاحة", wordEn: "Apple" },
+        { letter: "ث", word: "ثعلب", wordEn: "Fox" },
+        { letter: "ج", word: "جمل", wordEn: "Camel" },
+        { letter: "ح", word: "حصان", wordEn: "Horse" },
+        { letter: "خ", word: "خروف", wordEn: "Sheep" },
+        { letter: "د", word: "دجاجة", wordEn: "Chicken" },
+        { letter: "ذ", word: "ذئب", wordEn: "Wolf" },
+        { letter: "ر", word: "رمانة", wordEn: "Pomegranate" },
+        { letter: "ز", word: "زهرة", wordEn: "Flower" },
+        { letter: "س", word: "سمكة", wordEn: "Fish" },
+        { letter: "ش", word: "شمس", wordEn: "Sun" },
+        { letter: "ص", word: "صقر", wordEn: "Falcon" },
+        { letter: "ض", word: "ضفدع", wordEn: "Frog" },
+        { letter: "ط", word: "طائر", wordEn: "Bird" },
+        { letter: "ظ", word: "ظبي", wordEn: "Deer" },
+        { letter: "ع", word: "عصفور", wordEn: "Sparrow" },
+        { letter: "غ", word: "غزال", wordEn: "Gazelle" },
+        { letter: "ف", word: "فراشة", wordEn: "Butterfly" },
+        { letter: "ق", word: "قطة", wordEn: "Cat" },
+        { letter: "ك", word: "كلب", wordEn: "Dog" },
+        { letter: "ل", word: "ليمون", wordEn: "Lemon" },
+        { letter: "م", word: "موز", wordEn: "Banana" },
+        { letter: "ن", word: "نملة", wordEn: "Ant" },
+        { letter: "هـ", word: "هرة", wordEn: "Cat" },
+        { letter: "و", word: "وردة", wordEn: "Rose" },
+        { letter: "ي", word: "يد", wordEn: "Hand" },
     ];
 
     await prisma.learningItem.createMany({
@@ -142,19 +142,19 @@ async function main() {
     // ENGLISH ALPHABET
     // ==========================================
     const englishLetters = [
-        { letter: "A", word: "Apple" },    { letter: "B", word: "Ball" },
-        { letter: "C", word: "Carrot" },   { letter: "D", word: "Dog" },
+        { letter: "A", word: "Apple" }, { letter: "B", word: "Ball" },
+        { letter: "C", word: "Carrot" }, { letter: "D", word: "Dog" },
         { letter: "E", word: "Elephant" }, { letter: "F", word: "Fish" },
-        { letter: "G", word: "Grapes" },   { letter: "H", word: "Hat" },
-        { letter: "I", word: "Ice cream" },{ letter: "J", word: "Juice" },
-        { letter: "K", word: "Kite" },     { letter: "L", word: "Lion" },
-        { letter: "M", word: "Moon" },     { letter: "N", word: "Nest" },
-        { letter: "O", word: "Orange" },   { letter: "P", word: "Pencil" },
-        { letter: "Q", word: "Queen" },    { letter: "R", word: "Rabbit" },
-        { letter: "S", word: "Sun" },      { letter: "T", word: "Tiger" },
+        { letter: "G", word: "Grapes" }, { letter: "H", word: "Hat" },
+        { letter: "I", word: "Ice cream" }, { letter: "J", word: "Juice" },
+        { letter: "K", word: "Kite" }, { letter: "L", word: "Lion" },
+        { letter: "M", word: "Moon" }, { letter: "N", word: "Nest" },
+        { letter: "O", word: "Orange" }, { letter: "P", word: "Pencil" },
+        { letter: "Q", word: "Queen" }, { letter: "R", word: "Rabbit" },
+        { letter: "S", word: "Sun" }, { letter: "T", word: "Tiger" },
         { letter: "U", word: "Umbrella" }, { letter: "V", word: "Van" },
-        { letter: "W", word: "Water" },    { letter: "X", word: "X-ray" },
-        { letter: "Y", word: "Yarn" },     { letter: "Z", word: "Zebra" },
+        { letter: "W", word: "Water" }, { letter: "X", word: "X-ray" },
+        { letter: "Y", word: "Yarn" }, { letter: "Z", word: "Zebra" },
     ];
 
     await prisma.learningItem.createMany({
@@ -177,11 +177,11 @@ async function main() {
     // ==========================================
     await prisma.learningItem.createMany({
         data: [
-            { category: "EMOTIONS", title: "Happy",   imageUrl: "/images/emotions/happy.png",   phrases: ["I am happy.", "I feel happy.", "Are you happy?"], sortOrder: 1 },
-            { category: "EMOTIONS", title: "Sad",     imageUrl: "/images/emotions/sad.png",     phrases: ["I'm sad.", "Are you sad?", "Why are you sad?", "I'm not happy."], sortOrder: 2 },
-            { category: "EMOTIONS", title: "Angry",   imageUrl: "/images/emotions/angry.png",   phrases: ["I am angry.", "I feel angry.", "I need to calm down."], sortOrder: 3 },
-            { category: "EMOTIONS", title: "Scared",  imageUrl: "/images/emotions/scared.png",  phrases: ["I am scared.", "I feel scared.", "Don't be scared."], sortOrder: 4 },
-            { category: "EMOTIONS", title: "Tired",   imageUrl: "/images/emotions/tired.png",   phrases: ["I am tired.", "I need to rest.", "I feel sleepy."], sortOrder: 5 },
+            { category: "EMOTIONS", title: "Happy", imageUrl: "/images/emotions/happy.png", phrases: ["I am happy.", "I feel happy.", "Are you happy?"], sortOrder: 1 },
+            { category: "EMOTIONS", title: "Sad", imageUrl: "/images/emotions/sad.png", phrases: ["I'm sad.", "Are you sad?", "Why are you sad?", "I'm not happy."], sortOrder: 2 },
+            { category: "EMOTIONS", title: "Angry", imageUrl: "/images/emotions/angry.png", phrases: ["I am angry.", "I feel angry.", "I need to calm down."], sortOrder: 3 },
+            { category: "EMOTIONS", title: "Scared", imageUrl: "/images/emotions/scared.png", phrases: ["I am scared.", "I feel scared.", "Don't be scared."], sortOrder: 4 },
+            { category: "EMOTIONS", title: "Tired", imageUrl: "/images/emotions/tired.png", phrases: ["I am tired.", "I need to rest.", "I feel sleepy."], sortOrder: 5 },
             { category: "EMOTIONS", title: "Worried", imageUrl: "/images/emotions/worried.png", phrases: ["I am worried.", "I feel worried.", "Everything is okay."], sortOrder: 6 },
         ],
         skipDuplicates: true,
@@ -192,12 +192,12 @@ async function main() {
     // ==========================================
     await prisma.learningItem.createMany({
         data: [
-            { category: "COMMUNICATION", title: "Hungry",  imageUrl: "/images/communication/hungry.png",  phrases: ["I'm hungry.", "Can I have food, please?", "Are you hungry?", "What's for lunch?"], sortOrder: 1 },
+            { category: "COMMUNICATION", title: "Hungry", imageUrl: "/images/communication/hungry.png", phrases: ["I'm hungry.", "Can I have food, please?", "Are you hungry?", "What's for lunch?"], sortOrder: 1 },
             { category: "COMMUNICATION", title: "Thirsty", imageUrl: "/images/communication/thirsty.png", phrases: ["I'm thirsty.", "Can I have water?", "I need a drink."], sortOrder: 2 },
-            { category: "COMMUNICATION", title: "Shower",  imageUrl: "/images/communication/shower.png",  phrases: ["I need a shower.", "Time to shower.", "I want to be clean."], sortOrder: 3 },
-            { category: "COMMUNICATION", title: "Play",    imageUrl: "/images/communication/play.png",    phrases: ["I want to play.", "Can we play?", "Let's play together."], sortOrder: 4 },
-            { category: "COMMUNICATION", title: "Study",   imageUrl: "/images/communication/study.png",   phrases: ["I want to study.", "Time to learn.", "Let's study together."], sortOrder: 5 },
-            { category: "COMMUNICATION", title: "Sleep",   imageUrl: "/images/communication/sleep.png",   phrases: ["I'm sleepy.", "I want to sleep.", "Goodnight."], sortOrder: 6 },
+            { category: "COMMUNICATION", title: "Shower", imageUrl: "/images/communication/shower.png", phrases: ["I need a shower.", "Time to shower.", "I want to be clean."], sortOrder: 3 },
+            { category: "COMMUNICATION", title: "Play", imageUrl: "/images/communication/play.png", phrases: ["I want to play.", "Can we play?", "Let's play together."], sortOrder: 4 },
+            { category: "COMMUNICATION", title: "Study", imageUrl: "/images/communication/study.png", phrases: ["I want to study.", "Time to learn.", "Let's study together."], sortOrder: 5 },
+            { category: "COMMUNICATION", title: "Sleep", imageUrl: "/images/communication/sleep.png", phrases: ["I'm sleepy.", "I want to sleep.", "Goodnight."], sortOrder: 6 },
         ],
         skipDuplicates: true,
     });
@@ -207,14 +207,14 @@ async function main() {
     // ==========================================
     await prisma.learningItem.createMany({
         data: [
-            { category: "CONVERSATION", title: "Me",     imageUrl: "/images/conversation/me.png",     phrases: ["This is me.", "I am here.", "My name is..."], sortOrder: 1 },
-            { category: "CONVERSATION", title: "Hello",  imageUrl: "/images/conversation/hello.png",  phrases: ["Hello!", "Hi there!", "Good morning!"], sortOrder: 2 },
-            { category: "CONVERSATION", title: "Yes",    imageUrl: "/images/conversation/yes.png",    phrases: ["Yes.", "Yes, please.", "I agree."], sortOrder: 3 },
-            { category: "CONVERSATION", title: "No",     imageUrl: "/images/conversation/no.png",     phrases: ["No.", "No, thank you.", "I don't want."], sortOrder: 4 },
-            { category: "CONVERSATION", title: "Help",   imageUrl: "/images/conversation/help.png",   phrases: ["Help me please.", "I need help.", "Can you help me?"], sortOrder: 5 },
-            { category: "CONVERSATION", title: "What",   imageUrl: "/images/conversation/what.png",   phrases: ["What is this?", "What do you want?", "What happened?"], sortOrder: 6 },
+            { category: "CONVERSATION", title: "Me", imageUrl: "/images/conversation/me.png", phrases: ["This is me.", "I am here.", "My name is..."], sortOrder: 1 },
+            { category: "CONVERSATION", title: "Hello", imageUrl: "/images/conversation/hello.png", phrases: ["Hello!", "Hi there!", "Good morning!"], sortOrder: 2 },
+            { category: "CONVERSATION", title: "Yes", imageUrl: "/images/conversation/yes.png", phrases: ["Yes.", "Yes, please.", "I agree."], sortOrder: 3 },
+            { category: "CONVERSATION", title: "No", imageUrl: "/images/conversation/no.png", phrases: ["No.", "No, thank you.", "I don't want."], sortOrder: 4 },
+            { category: "CONVERSATION", title: "Help", imageUrl: "/images/conversation/help.png", phrases: ["Help me please.", "I need help.", "Can you help me?"], sortOrder: 5 },
+            { category: "CONVERSATION", title: "What", imageUrl: "/images/conversation/what.png", phrases: ["What is this?", "What do you want?", "What happened?"], sortOrder: 6 },
             { category: "CONVERSATION", title: "Toilet", imageUrl: "/images/conversation/toilet.png", phrases: ["I need the toilet.", "Bathroom please.", "I need to go."], sortOrder: 7 },
-            { category: "CONVERSATION", title: "Sleep",  imageUrl: "/images/conversation/sleep.png",  phrases: ["I want to sleep.", "I'm sleepy.", "Goodnight."], sortOrder: 8 },
+            { category: "CONVERSATION", title: "Sleep", imageUrl: "/images/conversation/sleep.png", phrases: ["I want to sleep.", "I'm sleepy.", "Goodnight."], sortOrder: 8 },
         ],
         skipDuplicates: true,
     });
@@ -313,7 +313,7 @@ async function main() {
 main()
     .catch((e) => {
         console.error(e);
-        process.exit(1);
+        throw e;
     })
     .finally(async () => {
         await prisma.$disconnect();
