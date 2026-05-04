@@ -90,7 +90,12 @@ export const getTodayRoutineController = async (req: AuthRequest, res: Response,
 
 export const completeTaskController = async (req: AuthRequest<{ taskId: string }>, res: Response, next: NextFunction) => {
     try {
-        const childId = req.user!.userId;
+        let childId = req.user!.userId;
+        if (req.user!.role === "PARENT" && req.body.childId) {
+            childId = req.body.childId;
+            const childVerify = await prisma.user.findFirst({ where: { id: childId, parentId: req.user!.userId } });
+            if (!childVerify) throw Object.assign(new Error("Unauthorized: Child not found or does not belong to you"), { status: 403 });
+        }
         const { taskId } = req.params;
         const result = await completeTask(childId, taskId);
         return res.json(result);
@@ -99,7 +104,12 @@ export const completeTaskController = async (req: AuthRequest<{ taskId: string }
 
 export const skipTaskController = async (req: AuthRequest<{ taskId: string }>, res: Response, next: NextFunction) => {
     try {
-        const childId = req.user!.userId;
+        let childId = req.user!.userId;
+        if (req.user!.role === "PARENT" && req.body.childId) {
+            childId = req.body.childId;
+            const childVerify = await prisma.user.findFirst({ where: { id: childId, parentId: req.user!.userId } });
+            if (!childVerify) throw Object.assign(new Error("Unauthorized: Child not found or does not belong to you"), { status: 403 });
+        }
         const { taskId } = req.params;
         const result = await skipTask(childId, taskId);
         return res.json(result);
