@@ -1,0 +1,573 @@
+﻿import { Router } from "express";
+import {
+    createSessionSummaryController,
+    getAISessionsController,
+    getAIDashboardController,
+    createAIReportAdapterController,
+} from "./ai-session.controller";
+import { requireAuth, requireParent } from "../../middlewares/auth";
+
+const router = Router();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PUBLIC  (للـ AI Mobile بيبعت البيانات من الموبايل)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * POST /session-summary
+ *
+ * ملخص الجلسة من الـ AI Module على الموبايل.
+ * بيتبعت في آخر كل جلسة (لعبة أو قسم).
+ *
+ * Body: CreateAISessionDTO
+ * {
+ *   "user_id":              "uuid",
+ *   "section":              "GAMES" | "HOME" | "LEARNING" | "SKILLS" | "ROUTINE" | "PROFILE",
+ *   "game":                 "memory_game" | null,
+ *   "start_time":           "2026-04-13T10:00:00.000Z",
+ *   "end_time":             "2026-04-13T10:05:00.000Z",
+ *   "duration":             300,
+ *   "focus_score":          0.78,
+ *   "emotion_distribution": { "happy": 0.5, "sad": 0.1, "angry": 0.1, "neutral": 0.3 },
+ *   "dominant_emotion":     "HAPPY"
+ * }
+ */
+router.post("/session-summary", createSessionSummaryController);
+
+// هذا المسار مخصص لاستقبال التقارير من الموديل/الفلاتر بالصيغة اللي طلبتها مبرمجة الـ AI
+router.post("/api/reports", createAIReportAdapterController);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROTECTED  (للـ Parent بس)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * GET /ai-sessions/:childId
+ *
+ * قائمة جلسات الطفل مع Pagination.
+ * Query params: limit (default 20, max 100), offset (default 0)
+ */
+router.get(
+    "/ai-sessions/:childId",
+    requireAuth,
+    requireParent,
+    getAISessionsController
+);
+
+/**
+ * GET /ai-sessions/:childId/dashboard
+ *
+ * Dashboard تحليلي كامل للـ Parent يوضح:
+ * - متوسط التركيز
+ * - توزيع المشاعر
+ * - أكثر قسم استخدام
+ * - أكثر لعبة لعبها الطفل
+ * - اتجاه التركيز اليومي (آخر 7 أيام)
+ */
+router.get(
+    "/ai-sessions/:childId/dashboard",
+    requireAuth,
+    requireParent,
+    getAIDashboardController
+);
+
+export default router;
+import { Router } from "express";
+import {
+    getArticlesController,
+    getArticleByIdController,
+} from "./articles.controller";
+import { requireAuth } from "../../middlewares/auth";
+
+const router = Router();
+
+// الحصول على كل المقالات
+router.get("/", requireAuth, getArticlesController);
+
+// الحصول على مقال واحد
+router.get("/:articleId", requireAuth, getArticleByIdController);
+
+export default router;
+import { Router } from "express";
+import {
+  registerParentController,
+  loginController,
+  refreshController,
+  logoutController,
+  createChildController,
+  getMyChildrenController,
+  changeChildPasswordController,
+  forgotPasswordRequestController,
+  forgotPasswordVerifyController,
+  forgotPasswordResetController,
+  resetPasswordController,
+  verifyEmailController,
+} from "./auth.controller";
+import { requireAuth, requireParent } from "../../middlewares/auth";
+import { validate } from "../../utils/validate";
+import {
+  registerParentSchema,
+  loginSchema,
+  refreshSchema,
+  logoutSchema,
+  createChildSchema,
+  changeChildPasswordSchema,
+  forgotPasswordRequestSchema,
+  forgotPasswordVerifySchema,
+  resetPasswordSchema,
+} from "./auth.schemas";
+
+const router = Router();
+
+router.post("/register-parent", validate(registerParentSchema), registerParentController);
+router.post("/login", validate(loginSchema), loginController);
+router.post("/refresh", validate(refreshSchema), refreshController);
+router.post("/logout", validate(logoutSchema), logoutController);
+
+// ✅ Email Verification
+router.get("/verify-email", verifyEmailController);
+
+// Parent only
+router.post("/create-child", requireAuth, requireParent, validate(createChildSchema), createChildController);
+router.get("/my-children", requireAuth, requireParent, getMyChildrenController);
+router.patch("/children/:childId/password", requireAuth, requireParent, validate(changeChildPasswordSchema), changeChildPasswordController);
+
+// Forgot password (Email OTP)
+router.post("/forgot/request", validate(forgotPasswordRequestSchema), forgotPasswordRequestController);
+router.post("/forgot/verify", validate(forgotPasswordVerifySchema), forgotPasswordVerifyController);
+router.post("/forgot/reset", validate(resetPasswordSchema), forgotPasswordResetController);
+router.post("/reset-password", validate(resetPasswordSchema), resetPasswordController);
+
+export default router;
+import { Router } from "express";
+import {
+    createChatSessionController,
+    getChatSessionsController,
+    getChatMessagesController,
+    sendMessageController,
+    deleteChatSessionController,
+} from "./chatbot.controller";
+import { requireAuth, requireParent } from "../../middlewares/auth";
+import { validate } from "../../utils/validate";
+import {
+    createChatSessionSchema,
+    getChatSessionsSchema,
+    getChatMessagesSchema,
+    sendMessageSchema,
+    deleteChatSessionSchema,
+} from "./chatbot.schemas";
+
+const router = Router();
+
+// ==========================================
+// ✅ Chat Sessions Routes
+// ==========================================
+
+// الحصول على جلسات المحادثة
+router.get(
+    "/sessions",
+    requireAuth,
+    requireParent,
+    validate(getChatSessionsSchema),
+    getChatSessionsController
+);
+
+// إنشاء جلسة محادثة جديدة
+router.post(
+    "/sessions",
+    requireAuth,
+    requireParent,
+    validate(createChatSessionSchema),
+    createChatSessionController
+);
+
+// حذف جلسة محادثة
+router.delete(
+    "/sessions/:sessionId",
+    requireAuth,
+    requireParent,
+    validate(deleteChatSessionSchema),
+    deleteChatSessionController
+);
+
+// ==========================================
+// ✅ Chat Messages Routes
+// ==========================================
+
+// الحصول على رسائل جلسة محددة
+router.get(
+    "/sessions/:sessionId/messages",
+    requireAuth,
+    requireParent,
+    validate(getChatMessagesSchema),
+    getChatMessagesController
+);
+
+// إرسال رسالة والحصول على رد من AI
+router.post(
+    "/sessions/:sessionId/messages",
+    requireAuth,
+    requireParent,
+    validate(sendMessageSchema),
+    sendMessageController
+);
+
+export default router;
+import { Router } from "express";
+import {
+    createPostController,
+    getPostsController,
+    getPostByIdController,
+    deletePostController,
+    likePostController,
+    unlikePostController,
+    addCommentController,
+    getCommentsController,
+    savePostController,
+    unsavePostController,
+} from "./community.controller";
+import { requireAuth, requireParent } from "../../middlewares/auth";
+import { validate } from "../../utils/validate";
+import {
+    createPostSchema,
+    getPostsSchema,
+    getPostByIdSchema,
+    deletePostSchema,
+    likePostSchema,
+    addCommentSchema,
+    getCommentsSchema,
+    savePostSchema,
+} from "./community.schemas";
+
+const router = Router();
+
+// ==========================================
+// ✅ Posts Routes
+// ==========================================
+
+// الحصول على المنشورات (Latest, Most Liked, Saved)
+router.get(
+    "/posts",
+    requireAuth,
+    requireParent,
+    validate(getPostsSchema),
+    getPostsController
+);
+
+// إنشاء منشور جديد
+router.post(
+    "/posts",
+    requireAuth,
+    requireParent,
+    validate(createPostSchema),
+    createPostController
+);
+
+// الحصول على منشور واحد
+router.get(
+    "/posts/:postId",
+    requireAuth,
+    requireParent,
+    validate(getPostByIdSchema),
+    getPostByIdController
+);
+
+// حذف منشور
+router.delete(
+    "/posts/:postId",
+    requireAuth,
+    requireParent,
+    validate(deletePostSchema),
+    deletePostController
+);
+
+// ==========================================
+// ✅ Likes Routes
+// ==========================================
+
+// إعجاب بمنشور
+router.post(
+    "/posts/:postId/like",
+    requireAuth,
+    requireParent,
+    validate(likePostSchema),
+    likePostController
+);
+
+// إلغاء الإعجاب
+router.delete(
+    "/posts/:postId/like",
+    requireAuth,
+    requireParent,
+    validate(likePostSchema),
+    unlikePostController
+);
+
+// ==========================================
+// ✅ Comments Routes
+// ==========================================
+
+// الحصول على التعليقات
+router.get(
+    "/posts/:postId/comments",
+    requireAuth,
+    requireParent,
+    validate(getCommentsSchema),
+    getCommentsController
+);
+
+// إضافة تعليق
+router.post(
+    "/posts/:postId/comments",
+    requireAuth,
+    requireParent,
+    validate(addCommentSchema),
+    addCommentController
+);
+
+// ==========================================
+// ✅ Save Routes
+// ==========================================
+
+// حفظ منشور
+router.post(
+    "/posts/:postId/save",
+    requireAuth,
+    requireParent,
+    validate(savePostSchema),
+    savePostController
+);
+
+// إلغاء الحفظ
+router.delete(
+    "/posts/:postId/save",
+    requireAuth,
+    requireParent,
+    validate(savePostSchema),
+    unsavePostController
+);
+
+export default router;
+import { Router } from "express";
+import { saveScoreController, getScoresController, getLeaderboardController } from "./games.controller";
+import { requireAuth } from "../../middlewares/auth";
+
+const router = Router();
+
+router.post("/score", requireAuth, saveScoreController);
+router.get("/scores", requireAuth, getScoresController);
+router.get("/leaderboard/:gameType", requireAuth, getLeaderboardController);
+
+export default router;
+import { Router } from "express";
+import {
+    getCategoriesController,
+    getItemsByCategoryController,
+    getItemByIdController,
+    logLearningController,
+} from "./learning.controller";
+import { requireAuth } from "../../middlewares/auth";
+
+const router = Router();
+
+// الحصول على كل الـ categories
+router.get("/categories", requireAuth, getCategoriesController);
+
+// الحصول على items بتاعة category معينة
+router.get("/categories/:category", requireAuth, getItemsByCategoryController);
+
+// الحصول على item واحد
+router.get("/items/:itemId", requireAuth, getItemByIdController);
+
+// تسجيل إن الطفل شاف item
+router.post("/items/:itemId/log", requireAuth, logLearningController);
+
+export default router;
+import { Router } from "express";
+import {
+    getNotificationsController,
+    markAsReadController,
+    markAllAsReadController,
+    deleteNotificationController,
+    createTestNotificationController,
+} from "./notifications.controller";
+import { requireAuth, requireParent } from "../../middlewares/auth";
+import { validate } from "../../utils/validate";
+import {
+    getNotificationsSchema,
+    markAsReadSchema,
+    deleteNotificationSchema,
+    createTestNotificationSchema,
+    } from "./notifications.schemas";
+
+const router = Router();
+
+// ==========================================
+// ✅ Notifications Routes
+// ==========================================
+
+// الحصول على الإشعارات
+router.get(
+    "/",
+    requireAuth,
+    requireParent,
+    validate(getNotificationsSchema),
+    getNotificationsController
+);
+
+// تعليم كل الإشعارات كمقروءة
+router.post(
+    "/mark-all-read",
+    requireAuth,
+    requireParent,
+    markAllAsReadController
+);
+
+// تعليم إشعار كمقروء
+router.patch(
+    "/:notificationId/read",
+    requireAuth,
+    requireParent,
+    validate(markAsReadSchema),
+    markAsReadController
+);
+
+// حذف إشعار
+router.delete(
+    "/:notificationId",
+    requireAuth,
+    requireParent,
+    validate(deleteNotificationSchema),
+    deleteNotificationController
+);
+
+// ✅ للاختبار فقط: إنشاء إشعار تجريبي
+router.post(
+    "/test",
+    requireAuth,
+    requireParent,
+    validate(createTestNotificationSchema),
+    createTestNotificationController
+);
+
+export default router;
+import { Router } from "express";
+import { getChildProgressController, getReportsController } from "./progress.controller";
+import { requireAuth, requireParent } from "../../middlewares/auth";
+
+const router = Router();
+
+// للـ Parent - عشان يشوف progress الطفل
+router.get("/child/:childId", requireAuth, requireParent, getChildProgressController);
+
+// للـ Parent - عشان يشوف reports الطفل
+router.get("/reports/:childId", requireAuth, requireParent, getReportsController);
+
+export default router;
+import { Router } from "express";
+import { getRewardsController, getBadgesController } from "./rewards.controller";
+import { requireAuth } from "../../middlewares/auth";
+
+const router = Router();
+
+router.get("/", requireAuth, getRewardsController);
+router.get("/badges", requireAuth, getBadgesController);
+
+export default router;
+import { Router } from "express";
+import {
+    getRoutineTasksController,
+    addTaskController,
+    deleteTaskController,
+    getTodayRoutineController,
+    completeTaskController,
+    skipTaskController,
+    getRoutineProgressController,
+    getRoutineCatalogController,
+    addTemplateToRoutineController,
+} from "./routine.controller";
+import { requireAuth } from "../../middlewares/auth";
+
+const router = Router();
+
+router.get("/catalog", requireAuth, getRoutineCatalogController);
+router.post("/catalog/:templateId", requireAuth, addTemplateToRoutineController);
+
+router.get("/tasks", requireAuth, getRoutineTasksController);
+router.post("/tasks", requireAuth, addTaskController);
+router.delete("/tasks/:taskId", requireAuth, deleteTaskController);
+router.get("/today", requireAuth, getTodayRoutineController);
+router.post("/tasks/:taskId/complete", requireAuth, completeTaskController);
+router.post("/tasks/:taskId/skip", requireAuth, skipTaskController);
+router.get("/progress", requireAuth, getRoutineProgressController);
+
+export default router;
+import { Router } from "express";
+import {
+    getProfileController,
+    updateProfileController,
+    changePasswordController,
+} from "./settings.controller";
+import { requireAuth } from "../../middlewares/auth";
+import { validate } from "../../utils/validate";
+import { updateProfileSchema, changePasswordSchema } from "./settings.schemas";
+
+const router = Router();
+
+// ==========================================
+// ✅ Settings Routes
+// ==========================================
+
+// الحصول على البروفايل
+router.get("/profile", requireAuth, getProfileController);
+
+// تحديث البروفايل
+router.patch(
+    "/profile",
+    requireAuth,
+    validate(updateProfileSchema),
+    updateProfileController
+);
+
+// تغيير كلمة المرور
+router.post(
+    "/change-password",
+    requireAuth,
+    validate(changePasswordSchema),
+    changePasswordController
+);
+
+export default router;
+import { Router } from "express";
+import {
+    submitSurveyController,
+    getAssessmentController,
+    getSurveyQuestionsController,
+} from "./survey.controller";
+import { requireAuth, requireParent } from "../../middlewares/auth";
+import { getSurveyStatusController } from "./survey.controller";
+
+const router = Router();
+
+router.get("/questions", requireAuth, requireParent, getSurveyQuestionsController);
+
+router.post("/submit", requireAuth, requireParent, submitSurveyController);
+
+router.get("/result/:childId", requireAuth, requireParent, getAssessmentController);
+router.get(
+    "/status/:childId",
+    requireAuth,
+    requireParent,
+    getSurveyStatusController
+);
+
+export default router;
+import { Router } from "express";
+import { createUserController } from "./user.controller";
+import { requireAuth, requireParent } from "../../middlewares/auth";
+
+const router = Router();
+
+router.post("/", requireAuth, requireParent, createUserController); // ✅ محمي
+
+export default router;

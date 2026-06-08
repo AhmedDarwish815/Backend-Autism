@@ -1,8 +1,13 @@
 import os
 import uuid
 import base64
+import pickle
+import pandas as pd
+import numpy as np
 from pathlib import Path
 from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
+from sklearn.preprocessing import LabelEncoder
 from dotenv import load_dotenv
 
 import google.generativeai as genai
@@ -14,14 +19,69 @@ load_dotenv(dotenv_path=env_path)
 
 # ─── CONFIG ────────────────────────────────────────────────────────────────────
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
-GROQ_API_KEY = os.getenv(
-    "GROQ_API_KEY", "YOUR_GROQ_API_KEY_HERE"
-)  # for Whisper STT only
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "YOUR_GROQ_API_KEY_HERE")
 
 genai.configure(api_key=GEMINI_API_KEY)
 groq_client = Groq(api_key=GROQ_API_KEY)
 
-# ─── AUTISM SYSTEM PROMPT ──────────────────────────────────────────────────────
+# ─── FLASK APP ─────────────────────────────────────────────────────────────────
+app = Flask(__name__, static_folder="static")
+CORS(app)
+
+BASE_DIR = os.path.dirname(__file__)
+
+# ─── 1. SURVEY AI MODEL SETUP ──────────────────────────────────────────────────
+model_path = os.path.join(BASE_DIR, 'models', 'random_forest_model.pkl')
+model = None
+if os.path.exists(model_path):
+    with open(model_path, 'rb') as f:
+        model = pickle.load(f)
+
+encoders = {}
+
+def prepare_encoders():
+    csv_path = os.path.join(BASE_DIR, 'data', 'Autism_data.csv')
+    if not os.path.exists(csv_path):
+        print("Warning: Autism_data.csv not found. Prediction API may fail.")
+        return
+        
+    data = pd.read_csv(csv_path)
+    data = data[data['age'] != 'age']
+    data['age'] = data['age'].apply(lambda x: int(float(x)) if pd.notna(x) else 0)
+    data = data.rename(columns={'austim':'autism', 'contry_of_res':'Country_of_res'})
+    data = data.drop(columns=['age_desc','ID'], errors='ignore')
+    data['ethnicity'] = data['ethnicity'].replace('?', data['ethnicity'].mode()[0])
+    data['ethnicity'] = data['ethnicity'].replace('others','Others')
+    data['relation'] = data['relation'].replace('?', data['relation'].mode()[0])
+    
+    mapping = {'Viet Nam':'Vietnam', 'AmericanSamoa':'United States', 'Hong Kong': 'China'}
+    data['Country_of_res'] = data['Country_of_res'].replace(mapping)
+    
+    categorical_columns = data.select_dtypes(include=['object']).columns
+    for col in categorical_columns:
+        le = LabelEncoder()
+        le.fit(data[col])
+        encoders[col] = le
+
+prepare_encoders()
+
+cat_cols = ['gender', 'ethnicity', 'jaundice', 'autism', 'Country_of_res', 'used_app_before', 'relation']
+X_COLUMNS_ORDER = [
+    'A1_Score','A2_Score','A3_Score','A4_Score','A5_Score',
+    'A6_Score','A7_Score','A8_Score','A9_Score','A10_Score',
+    'age', 'gender', 'ethnicity', 'jaundice', 'autism',
+    'Country_of_res', 'used_app_before', 'result', 'relation'
+]
+
+def safe_transform(le, value):
+    try:
+        return le.transform([value])[0]
+    except:
+        return 0
+
+# ─── 2. CHATBOT AI SETUP ───────────────────────────────────────────────────────
+sessions = {}
+
 SYSTEM_PROMPT_EN = """
 You are Autimate, a compassionate and specialized AI assistant designed specifically 
 to support individuals with Autism Spectrum Disorder (ASD), their caregivers, 
@@ -56,23 +116,13 @@ SYSTEM_PROMPT_AR = """
 - اجعل الردود موجزة — من جملتين إلى أربع جمل قصيرة ما لم يكن هناك حاجة لمزيد من التفاصيل.
 """
 
-# ─── FLASK APP ─────────────────────────────────────────────────────────────────
-app = Flask(__name__, static_folder="static")
-
-# In-memory conversation history per session
-sessions = {}
-
-
 def get_gemini_response(user_message: str, session_id: str, lang: str = "en") -> str:
-    """Get response from Gemini with autism-focused system prompt."""
-
     if session_id not in sessions:
         sessions[session_id] = []
 
     history = sessions[session_id]
     system_prompt = SYSTEM_PROMPT_AR if lang == "ar" else SYSTEM_PROMPT_EN
 
-    # Build conversation for Gemini
     model = genai.GenerativeModel(
         model_name="gemini-2.5-flash", system_instruction=system_prompt
     )
@@ -81,11 +131,9 @@ def get_gemini_response(user_message: str, session_id: str, lang: str = "en") ->
     response = chat.send_message(user_message)
     reply = response.text
 
-    # Save to history (Gemini format)
     history.append({"role": "user", "parts": [user_message]})
     history.append({"role": "model", "parts": [reply]})
 
-    # Keep last 20 turns to avoid token overflow
     if len(history) > 40:
         sessions[session_id] = history[-40:]
 
@@ -101,38 +149,31 @@ def transcribe_audio(audio_bytes: bytes, lang="en"):
             response_format="verbose_json",
             language="ar" if lang == "ar" else "en",
         )
-
         return transcription.text
-
     except Exception as e:
         raise Exception(f"Groq Error: {str(e)}")
 
 
 def text_to_speech(text: str, lang: str = "en") -> str:
-    """Convert text to speech using Groq, return base64 encoded audio."""
     try:
-        # Select model and voice based on language
         if lang == "ar":
-            model = "canopylabs/orpheus-arabic-saudi"
-            voice = "abdullah"  # Arabic voice
+            model_name = "canopylabs/orpheus-arabic-saudi"
+            voice = "abdullah"
         else:
-            model = "canopylabs/orpheus-english"
-            voice = "male_1"  # English voice
+            model_name = "canopylabs/orpheus-english"
+            voice = "male_1"
 
-        # Call Groq TTS API
         response = groq_client.audio.speech.create(
-            model=model,
+            model=model_name,
             voice=voice,
             response_format="wav",
             input=text,
         )
 
-        # Save to speech.wav file
         speech_file_path = Path(__file__).parent / "speech.wav"
         with open(speech_file_path, "wb") as f:
             f.write(response.content)
 
-        # Read and encode to base64
         with open(speech_file_path, "rb") as f:
             audio_b64 = base64.b64encode(f.read()).decode("utf-8")
 
@@ -143,29 +184,52 @@ def text_to_speech(text: str, lang: str = "en") -> str:
 
 # ─── ROUTES ────────────────────────────────────────────────────────────────────
 
+@app.route('/')
+def home():
+    return jsonify({"status": "ok", "service": "Unified AI API Running!"})
 
-@app.after_request
-def add_cors(response):
-    """Add CORS headers manually (no flask-cors needed)."""
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    return response
+@app.route('/predict', methods=['POST'])
+def predict():
+    try:
+        if model is None:
+            return jsonify({"error": "Model not loaded"}), 500
 
+        data = request.json
+        df = pd.DataFrame([data])
 
-@app.route("/", methods=["GET"])
-def index():
-    """Serve test UI."""
-    return send_from_directory("static", "index.html")
+        if 'ethnicity' in df.columns and df['ethnicity'].iloc[0] == "?":
+            df['ethnicity'] = "White-European"
+        if 'Country_of_res' in df.columns and df['Country_of_res'].iloc[0] == "Others":
+            df['Country_of_res'] = "United States"
+        if 'relation' in df.columns and df['relation'].iloc[0] == "?":
+            df['relation'] = "Self"
+
+        for col in cat_cols:
+            if col in encoders and col in df.columns:
+                df[col] = df[col].apply(lambda x: safe_transform(encoders[col], x))
+
+        for col in X_COLUMNS_ORDER:
+            if col not in df.columns:
+                df[col] = 0
+        df = df[X_COLUMNS_ORDER]
+
+        prediction = int(model.predict(df)[0])
+        proba = model.predict_proba(df)
+        probability = float(np.max(proba)) * 100
+        if np.isnan(probability):
+            probability = 0.0
+
+        return jsonify({
+            "prediction": prediction,
+            "probability": round(probability, 2)
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/chat", methods=["POST", "OPTIONS"])
 def chat():
-    """
-    Text chat endpoint.
-    Body: { "message": str, "session_id": str (optional), "lang": "en"|"ar" }
-    Returns: { "reply": str, "session_id": str }
-    """
     if request.method == "OPTIONS":
         return jsonify({}), 200
 
@@ -178,17 +242,11 @@ def chat():
         return jsonify({"error": "Empty message"}), 400
 
     reply = get_gemini_response(message, session_id, lang)
-
     return jsonify({"reply": reply, "session_id": session_id})
 
 
 @app.route("/api/voice", methods=["POST", "OPTIONS"])
 def voice():
-    """
-    Voice input endpoint.
-    Body: { "audio": base64_audio, "session_id": str, "lang": "en"|"ar" }
-    Returns: { "transcript": str, "reply": str, "session_id": str }
-    """
     if request.method == "OPTIONS":
         return jsonify({}), 200
 
@@ -206,27 +264,21 @@ def voice():
         reply = get_gemini_response(transcript, session_id, lang)
         audio_response = text_to_speech(reply, lang)
 
-        return jsonify(
-            {
-                "transcript": transcript,
-                "reply": reply,
-                "audio": audio_response,
-                "session_id": session_id,
-            }
-        )
+        return jsonify({
+            "transcript": transcript,
+            "reply": reply,
+            "audio": audio_response,
+            "session_id": session_id,
+        })
     except Exception as e:
         error_msg = str(e)
         if "insufficient_quota" in error_msg or "rate_limit" in error_msg:
-            return (
-                jsonify({"error": "Groq quota exceeded. Please check your billing."}),
-                402,
-            )
+            return jsonify({"error": "Groq quota exceeded. Please check your billing."}), 402
         return jsonify({"error": f"Voice processing failed: {error_msg}"}), 500
 
 
 @app.route("/api/reset", methods=["POST"])
 def reset():
-    """Clear conversation history for a session."""
     session_id = request.get_json().get("session_id", "")
     if session_id in sessions:
         del sessions[session_id]
@@ -235,9 +287,9 @@ def reset():
 
 @app.route("/api/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok", "service": "Autimate Chatbot API"})
+    return jsonify({"status": "ok", "service": "Unified AI API"})
 
 
 # ─── RUN ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)

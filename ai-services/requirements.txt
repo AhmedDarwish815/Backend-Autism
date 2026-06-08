@@ -6,3 +6,6 @@ scikit-learn==1.6.1
 xgboost
 gunicorn==22.0.0
 joblib
+google-generativeai
+groq
+python-dotenv

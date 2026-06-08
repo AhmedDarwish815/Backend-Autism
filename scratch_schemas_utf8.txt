@@ -1,0 +1,277 @@
+﻿import { z } from "zod";
+
+const email = z.string().email("Invalid email");
+const password = z.string().min(6, "Password must be at least 6 characters");
+
+// ✅ Register Parent Schema - متطابق مع الـ UI
+export const registerParentSchema = z.object({
+  body: z.object({
+    fullName: z.string().min(2, "Full name is required"),
+    email,
+    phone: z.string().optional(),
+    password,
+    confirmPassword: z.string(),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  }),
+});
+
+export const loginSchema = z.object({
+  body: z.object({ email, password }),
+});
+
+export const refreshSchema = z.object({
+  body: z.object({ refreshToken: z.string().min(10, "refreshToken is required") }),
+});
+
+export const logoutSchema = z.object({
+  body: z.object({ refreshToken: z.string().min(10, "refreshToken is required") }),
+});
+
+// ✅ Create Child Schema - متطابق مع الـ UI
+export const createChildSchema = z.object({
+  body: z.object({
+    childName: z.string().min(2, "Child name is required"),
+    email,
+    password,
+    confirmPassword: z.string(),
+    gender: z.enum(["MALE", "FEMALE"]).optional(),
+    dateOfBirth: z.string().optional(),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  }),
+});
+
+export const changeChildPasswordSchema = z.object({
+  params: z.object({ childId: z.string().uuid("Invalid childId") }),
+  body: z.object({ newPassword: password }),
+});
+
+// ✅ Forgot Password Schemas
+export const forgotPasswordRequestSchema = z.object({
+  body: z.object({ email }),
+});
+
+export const forgotPasswordVerifySchema = z.object({
+  body: z.object({
+    email,
+    code: z.string().length(6, "Code must be 6 digits"),
+  }),
+});
+
+export const resetPasswordSchema = z.object({
+  body: z.object({
+    token: z.string().min(1, "Token is required"),
+    newPassword: password,
+  }),
+});
+import { z } from "zod";
+
+// ==========================================
+// ✅ Schema: إنشاء جلسة محادثة
+// ==========================================
+export const createChatSessionSchema = z.object({
+    body: z.object({
+        title: z.string().optional(),
+    }),
+});
+
+// ==========================================
+// ✅ Schema: الحصول على الجلسات
+// ==========================================
+export const getChatSessionsSchema = z.object({
+    query: z.object({
+        limit: z.string().regex(/^\d+$/).optional(),
+        offset: z.string().regex(/^\d+$/).optional(),
+    }),
+});
+
+// ==========================================
+// ✅ Schema: الحصول على الرسائل
+// ==========================================
+export const getChatMessagesSchema = z.object({
+    params: z.object({
+        sessionId: z.string().uuid("Invalid sessionId"),
+    }),
+    query: z.object({
+        limit: z.string().regex(/^\d+$/).optional(),
+        offset: z.string().regex(/^\d+$/).optional(),
+    }),
+});
+
+// ==========================================
+// ✅ Schema: إرسال رسالة
+// ==========================================
+export const sendMessageSchema = z.object({
+    params: z.object({
+        sessionId: z.string().uuid("Invalid sessionId"),
+    }),
+    body: z.object({
+        content: z.string().min(1, "Message content is required").max(2000, "Message is too long"),
+    }),
+    });
+
+    // ==========================================
+    // ✅ Schema: حذف جلسة
+    // ==========================================
+    export const deleteChatSessionSchema = z.object({
+    params: z.object({
+        sessionId: z.string().uuid("Invalid sessionId"),
+    }),
+});
+import { z } from "zod";
+
+// ==========================================
+// ✅ Schema: إنشاء منشور
+// ==========================================
+export const createPostSchema = z.object({
+    body: z.object({
+        content: z.string().min(1, "Content is required").max(5000, "Content is too long"),
+        imageUrl: z.string().url().optional(),
+    }),
+});
+
+// ==========================================
+// ✅ Schema: الحصول على المنشورات
+// ==========================================
+export const getPostsSchema = z.object({
+    query: z.object({
+        sort: z.enum(["latest", "most_liked"]).optional(),
+        savedOnly: z.string().optional(), // "true" or "false"
+        limit: z.string().regex(/^\d+$/).optional(),
+        offset: z.string().regex(/^\d+$/).optional(),
+    }),
+});
+
+// ==========================================
+// ✅ Schema: الحصول على منشور واحد
+// ==========================================
+export const getPostByIdSchema = z.object({
+    params: z.object({
+        postId: z.string().uuid("Invalid postId"),
+    }),
+});
+
+// ==========================================
+// ✅ Schema: حذف منشور
+// ==========================================
+export const deletePostSchema = z.object({
+    params: z.object({
+        postId: z.string().uuid("Invalid postId"),
+    }),
+});
+
+// ==========================================
+// ✅ Schema: إعجاب/إلغاء إعجاب
+// ==========================================
+export const likePostSchema = z.object({
+    params: z.object({
+        postId: z.string().uuid("Invalid postId"),
+    }),
+});
+
+// ==========================================
+// ✅ Schema: إضافة تعليق
+// ==========================================
+export const addCommentSchema = z.object({
+    params: z.object({
+        postId: z.string().uuid("Invalid postId"),
+    }),
+    body: z.object({
+        content: z.string().min(1, "Content is required").max(1000, "Content is too long"),
+    }),
+});
+
+// ==========================================
+// ✅ Schema: الحصول على التعليقات
+// ==========================================
+export const getCommentsSchema = z.object({
+    params: z.object({
+        postId: z.string().uuid("Invalid postId"),
+    }),
+    query: z.object({
+        limit: z.string().regex(/^\d+$/).optional(),
+        offset: z.string().regex(/^\d+$/).optional(),
+    }),
+});
+
+// ==========================================
+// ✅ Schema: حفظ/إلغاء حفظ
+// ==========================================
+export const savePostSchema = z.object({
+    params: z.object({
+        postId: z.string().uuid("Invalid postId"),
+    }),
+});
+import { z } from "zod";
+
+// ==========================================
+// ✅ Schema: الحصول على الإشعارات
+// ==========================================
+export const getNotificationsSchema = z.object({
+    query: z.object({
+        unreadOnly: z.string().optional(),
+        limit: z.string().regex(/^\d+$/).optional(),
+        offset: z.string().regex(/^\d+$/).optional(),
+    }),
+});
+
+// ==========================================
+// ✅ Schema: تعليم إشعار كمقروء
+// ==========================================
+export const markAsReadSchema = z.object({
+    params: z.object({
+        notificationId: z.string().uuid("Invalid notificationId"),
+    }),
+});
+
+// ==========================================
+// ✅ Schema: حذف إشعار
+// ==========================================
+export const deleteNotificationSchema = z.object({
+    params: z.object({
+        notificationId: z.string().uuid("Invalid notificationId"),
+    }),
+});
+
+// ==========================================
+// ✅ Schema: إنشاء إشعار تجريبي
+// ==========================================
+export const createTestNotificationSchema = z.object({
+    body: z.object({
+        type: z.enum([
+        "SURVEY_REMINDER",
+        "ACTIVITY_REMINDER",
+        "NEW_POST",
+        "NEW_COMMENT",
+        "PROGRESS_UPDATE",
+        "SYSTEM",
+        ]),
+        title: z.string().min(1, "Title is required"),
+        message: z.string().min(1, "Message is required"),
+    }),
+});
+import { z } from "zod";
+
+// ==========================================
+// ✅ Schema: تحديث البروفايل
+// ==========================================
+export const updateProfileSchema = z.object({
+    body: z.object({
+        fullName: z.string().min(2, "Full name must be at least 2 characters").optional(),
+        email: z.string().email("Invalid email format").optional(),
+        phone: z.string().optional(),
+    }),
+});
+
+// ==========================================
+// ✅ Schema: تغيير كلمة المرور
+// ==========================================
+export const changePasswordSchema = z.object({
+    body: z.object({
+        currentPassword: z.string().min(1, "Current password is required"),
+        newPassword: z.string().min(6, "New password must be at least 6 characters"),
+    }),
+});
