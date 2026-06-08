@@ -55,8 +55,8 @@ export const addTaskController = async (req: AuthRequest, res: Response, next: N
             const childVerify = await prisma.user.findFirst({ where: { id: childId, parentId: req.user!.userId } });
             if (!childVerify) throw Object.assign(new Error("Unauthorized: Child not found or does not belong to you"), { status: 403 });
         }
-        const { title, scheduledTime, iconName } = req.body;
-        const task = await addTask(childId, title, scheduledTime, iconName);
+        const { title, scheduledTime, iconName, imageUrl } = req.body;
+        const task = await addTask(childId, title, scheduledTime, iconName, imageUrl);
         return res.status(201).json(task);
     } catch (err) { next(err); }
 };

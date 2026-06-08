@@ -34,7 +34,7 @@ export const addTemplateToRoutine = async (childId: string, templateId: string) 
     });
 };
 
-export const addTask = async (childId: string, title: string, scheduledTime?: string, iconName?: string) => {
+export const addTask = async (childId: string, title: string, scheduledTime?: string, iconName?: string, imageUrl?: string) => {
     if (!title || title.trim().length === 0) {
         throw Object.assign(new Error("Title is required"), { status: 400 });
     }
@@ -43,6 +43,7 @@ export const addTask = async (childId: string, title: string, scheduledTime?: st
             title: title.trim(),
             scheduledTime: scheduledTime || null,
             iconName: iconName || null,
+            imageUrl: imageUrl || null,
             childId,
             sortOrder: 99,
         },
