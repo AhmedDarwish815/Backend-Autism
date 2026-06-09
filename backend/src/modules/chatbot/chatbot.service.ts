@@ -243,7 +243,7 @@ export const sendVoiceMessage = async (
         data: {
             sessionId,
             role: "user",
-            content: data.user_text || "🎤 رسالة صوتية",
+            content: data.transcript || "🎤 رسالة صوتية",
         },
         select: {
             id: true,
@@ -257,7 +257,7 @@ export const sendVoiceMessage = async (
         data: {
             sessionId,
             role: "assistant",
-            content: data.reply_text,
+            content: data.reply,
         },
         select: {
             id: true,
@@ -275,6 +275,6 @@ export const sendVoiceMessage = async (
     return {
         userMessage,
         assistantMessage,
-        reply_audio: data.reply_audio, // Base64 audio string
+        reply_audio: data.audio, // Base64 audio string
     };
 };

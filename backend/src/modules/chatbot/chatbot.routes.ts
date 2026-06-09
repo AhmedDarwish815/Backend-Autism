@@ -80,6 +80,7 @@ router.post(
     "/sessions/:sessionId/voice",
     requireAuth,
     requireParent,
+    validate(deleteChatSessionSchema), // Validates sessionId
     upload.single("audio"),
     sendVoiceMessageController
 );
