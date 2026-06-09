@@ -5,7 +5,11 @@ import {
     getChatMessagesController,
     sendMessageController,
     deleteChatSessionController,
+    sendVoiceMessageController,
 } from "./chatbot.controller";
+import multer from "multer";
+
+const upload = multer({ storage: multer.memoryStorage() });
 import { requireAuth, requireParent } from "../../middlewares/auth";
 import { validate } from "../../utils/validate";
 import {
@@ -69,6 +73,15 @@ router.post(
     requireParent,
     validate(sendMessageSchema),
     sendMessageController
+);
+
+// إرسال رسالة صوتية والحصول على رد صوتي ونصي من AI
+router.post(
+    "/sessions/:sessionId/voice",
+    requireAuth,
+    requireParent,
+    upload.single("audio"),
+    sendVoiceMessageController
 );
 
 export default router;

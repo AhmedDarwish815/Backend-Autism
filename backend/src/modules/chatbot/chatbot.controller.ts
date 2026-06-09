@@ -6,6 +6,7 @@ import {
     getChatMessages,
     sendMessage,
     deleteChatSession,
+    sendVoiceMessage,
 } from "./chatbot.service";
 
 // ==========================================
@@ -111,6 +112,32 @@ export const deleteChatSessionController = async (
 
         const result = await deleteChatSession(sessionId, userId);
         return res.json(result);
+    } catch (err) {
+        next(err);
+    }
+};
+
+// ==========================================
+// ✅ Controller: إرسال رسالة صوتية
+// ==========================================
+export const sendVoiceMessageController = async (
+    req: AuthRequest<{ sessionId: string }>,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const userId = req.user!.userId;
+        const { sessionId } = req.params;
+
+        if (!req.file) {
+            return res.status(400).json({ error: "Audio file is required" });
+        }
+
+        const audioBuffer = req.file.buffer;
+        const filename = req.file.originalname;
+
+        const result = await sendVoiceMessage(sessionId, userId, audioBuffer, filename);
+        return res.status(201).json(result);
     } catch (err) {
         next(err);
     }

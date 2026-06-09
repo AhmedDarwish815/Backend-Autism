@@ -80,7 +80,6 @@ def safe_transform(le, value):
         return 0
 
 # ─── 2. CHATBOT AI SETUP ───────────────────────────────────────────────────────
-sessions = {}
 
 SYSTEM_PROMPT_EN = """
 You are Autimate, a compassionate and specialized AI assistant designed specifically 
@@ -116,11 +115,7 @@ SYSTEM_PROMPT_AR = """
 - اجعل الردود موجزة — من جملتين إلى أربع جمل قصيرة ما لم يكن هناك حاجة لمزيد من التفاصيل.
 """
 
-def get_gemini_response(user_message: str, session_id: str, lang: str = "en") -> str:
-    if session_id not in sessions:
-        sessions[session_id] = []
-
-    history = sessions[session_id]
+def get_gemini_response(user_message: str, history: list, lang: str = "en") -> str:
     system_prompt = SYSTEM_PROMPT_AR if lang == "ar" else SYSTEM_PROMPT_EN
 
     model = genai.GenerativeModel(
@@ -129,15 +124,7 @@ def get_gemini_response(user_message: str, session_id: str, lang: str = "en") ->
 
     chat = model.start_chat(history=history)
     response = chat.send_message(user_message)
-    reply = response.text
-
-    history.append({"role": "user", "parts": [user_message]})
-    history.append({"role": "model", "parts": [reply]})
-
-    if len(history) > 40:
-        sessions[session_id] = history[-40:]
-
-    return reply
+    return response.text
 
 
 def transcribe_audio(audio_bytes: bytes, lang="en"):
@@ -237,11 +224,12 @@ def chat():
     message = data.get("message", "").strip()
     session_id = data.get("session_id") or str(uuid.uuid4())
     lang = data.get("lang", "en")
+    history = data.get("history", [])
 
     if not message:
         return jsonify({"error": "Empty message"}), 400
 
-    reply = get_gemini_response(message, session_id, lang)
+    reply = get_gemini_response(message, history, lang)
     return jsonify({"reply": reply, "session_id": session_id})
 
 
@@ -250,18 +238,34 @@ def voice():
     if request.method == "OPTIONS":
         return jsonify({}), 200
 
-    data = request.get_json()
-    audio_b64 = data.get("audio", "")
-    session_id = data.get("session_id") or str(uuid.uuid4())
-    lang = data.get("lang", "en")
+    import json
+    audio_file = request.files.get("audio")
+    audio_bytes = None
 
-    if not audio_b64:
+    if audio_file:
+        audio_bytes = audio_file.read()
+    else:
+        # Fallback for json base64
+        data = request.get_json(silent=True) or {}
+        audio_b64 = data.get("audio", "")
+        if audio_b64:
+            audio_bytes = base64.b64decode(audio_b64)
+
+    if not audio_bytes:
         return jsonify({"error": "No audio provided"}), 400
 
+    session_id = request.form.get("session_id") or (request.json.get("session_id") if request.is_json else str(uuid.uuid4()))
+    lang = request.form.get("lang", "en")
+    history_str = request.form.get("history", "[]")
+
     try:
-        audio_bytes = base64.b64decode(audio_b64)
+        history = json.loads(history_str)
+    except:
+        history = []
+
+    try:
         transcript = transcribe_audio(audio_bytes, lang)
-        reply = get_gemini_response(transcript, session_id, lang)
+        reply = get_gemini_response(transcript, history, lang)
         audio_response = text_to_speech(reply, lang)
 
         return jsonify({
@@ -279,10 +283,7 @@ def voice():
 
 @app.route("/api/reset", methods=["POST"])
 def reset():
-    session_id = request.get_json().get("session_id", "")
-    if session_id in sessions:
-        del sessions[session_id]
-    return jsonify({"status": "cleared"})
+    return jsonify({"status": "cleared, no memory stored anymore"})
 
 
 @app.route("/api/health", methods=["GET"])

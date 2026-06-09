@@ -119,13 +119,38 @@ export const sendMessage = async (
         orderBy: { createdAt: "asc" },
     });
 
-    const aiResponse = await generateAIResponse(history);
+    const formattedHistory = history.map((msg) => ({
+        role: msg.role === "user" ? "user" : "model",
+        parts: [msg.content],
+    }));
+
+    const aiServiceBaseUrl = process.env.AI_SERVICE_URL || "http://ai:5000";
+    const chatEndpoint = `${aiServiceBaseUrl}/api/chat`;
+
+    const response = await fetch(chatEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            message: content.trim(),
+            session_id: sessionId,
+            lang: "ar",
+            history: formattedHistory,
+        }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        console.error("AI service chat error:", error);
+        throw Object.assign(new Error("AI chat service error"), { status: 502 });
+    }
+
+    const data = await response.json() as any;
 
     const assistantMessage = await prisma.chatMessage.create({
         data: {
             sessionId,
             role: "assistant",
-            content: aiResponse,
+            content: data.reply,
         },
         select: {
             id: true,
@@ -135,7 +160,6 @@ export const sendMessage = async (
         },
     });
 
-
     await prisma.chatSession.update({
         where: { id: sessionId },
         data: { updatedAt: new Date() },
@@ -144,52 +168,6 @@ export const sendMessage = async (
     return { userMessage, assistantMessage };
 };
 
-
-async function generateAIResponse(
-    history: { role: string; content: string }[]
-): Promise<string> {
-    const GROQ_API_KEY = process.env.GROQ_API_KEY;
-
-    if (!GROQ_API_KEY) {
-        throw Object.assign(new Error("GROQ_API_KEY is not configured"), { status: 500 });
-    }
-
-
-    const messages = [
-        {
-            role: "system",
-            content: `You are a friendly and patient assistant for parents of children with autism. 
-            Use simple, clear, and encouraging language. 
-            Provide practical advice and emotional support.
-            If a question requires medical advice, always recommend consulting a specialist.`,
-        },
-        ...history.map((msg) => ({
-            role: msg.role,
-            content: msg.content,
-        })),
-    ];
-
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${GROQ_API_KEY}`,
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            model: "llama-3.1-8b-instant",
-            messages,
-        }),
-    });
-
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        console.error("Groq API error:", error);
-        throw Object.assign(new Error("AI service error"), { status: 502 });
-    }
-
-    const data = await response.json() as any;
-    return data.choices[0].message.content;
-}
 
 
 export const deleteChatSession = async (
@@ -210,4 +188,93 @@ export const deleteChatSession = async (
     });
 
     return { ok: true, message: "Chat session deleted successfully" };
+};
+
+export const sendVoiceMessage = async (
+    sessionId: string,
+    userId: string,
+    audioBuffer: Buffer,
+    filename: string
+) => {
+    const session = await prisma.chatSession.findFirst({
+        where: { id: sessionId, userId },
+        select: { id: true },
+    });
+
+    if (!session) {
+        throw Object.assign(new Error("Chat session not found"), { status: 404 });
+    }
+
+    const history = await prisma.chatMessage.findMany({
+        where: { sessionId },
+        select: { role: true, content: true },
+        orderBy: { createdAt: "asc" },
+    });
+
+    const formattedHistory = history.map((msg) => ({
+        role: msg.role === "user" ? "user" : "model",
+        parts: [msg.content],
+    }));
+
+    const aiServiceBaseUrl = process.env.AI_SERVICE_URL || "http://ai:5000";
+    const voiceEndpoint = `${aiServiceBaseUrl}/api/voice`;
+
+    const formData = new FormData();
+    const blob = new Blob([audioBuffer as any], { type: "audio/wav" });
+    formData.append("audio", blob, filename);
+    formData.append("session_id", sessionId);
+    formData.append("lang", "ar");
+    formData.append("history", JSON.stringify(formattedHistory));
+
+    const response = await fetch(voiceEndpoint, {
+        method: "POST",
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        console.error("AI service voice error:", error);
+        throw Object.assign(new Error("AI voice service error"), { status: 502 });
+    }
+
+    const data = await response.json() as any;
+
+    const userMessage = await prisma.chatMessage.create({
+        data: {
+            sessionId,
+            role: "user",
+            content: data.user_text || "🎤 رسالة صوتية",
+        },
+        select: {
+            id: true,
+            role: true,
+            content: true,
+            createdAt: true,
+        },
+    });
+
+    const assistantMessage = await prisma.chatMessage.create({
+        data: {
+            sessionId,
+            role: "assistant",
+            content: data.reply_text,
+        },
+        select: {
+            id: true,
+            role: true,
+            content: true,
+            createdAt: true,
+        },
+    });
+
+    await prisma.chatSession.update({
+        where: { id: sessionId },
+        data: { updatedAt: new Date() },
+    });
+
+    return {
+        userMessage,
+        assistantMessage,
+        reply_audio: data.reply_audio, // Base64 audio string
+    };
 };
