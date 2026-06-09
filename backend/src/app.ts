@@ -28,6 +28,8 @@ app.get("/health", (req, res) => {
     res.json({ ok: true });
 });
 
+app.get("/favicon.ico", (req, res) => res.status(204).end());
+
 // ✅ كل الـ routes الأول
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
