@@ -159,7 +159,7 @@ def text_to_speech(text: str, lang: str = "en") -> str:
 
         speech_file_path = Path(__file__).parent / "speech.wav"
         with open(speech_file_path, "wb") as f:
-            f.write(response.content)
+            f.write(response.read())
 
         with open(speech_file_path, "rb") as f:
             audio_b64 = base64.b64encode(f.read()).decode("utf-8")
