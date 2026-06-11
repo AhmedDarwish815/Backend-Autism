@@ -27,7 +27,7 @@ export const addTemplateToRoutine = async (childId: string, templateId: string) 
     return prisma.routineTask.create({
         data: {
             title: template.title,
-            imageUrl: template.imageUrl,
+            imageUrl: template.imageUrl || "assets/routines/default-task.jpg",
             childId,
             sortOrder: template.sortOrder,
         },
@@ -43,7 +43,7 @@ export const addTask = async (childId: string, title: string, scheduledTime?: st
             title: title.trim(),
             scheduledTime: scheduledTime || null,
             iconName: iconName || null,
-            imageUrl: imageUrl || null,
+            imageUrl: imageUrl || "assets/routines/default-task.jpg",
             childId,
             sortOrder: 99,
         },
