@@ -1,94 +1,84 @@
-# Routine Module - Flutter Integration Guide
+# دليل ربط الروتين (Routine Module) لفلاتر 📱
 
-هذا الملف موجه لمطور الـ Flutter لشرح كيفية التعامل مع نظام الروتين (Routine)، وكيفية إدارة الصور، بالإضافة لتوثيق كامل للـ Endpoints الجديدة والقديمة الخاصة بالقسم.
+هذا الدليل مصمم لتوضيح كيفية ربط الروتين والتعامل مع الصور (Local Assets) بشكل صحيح لتطبيق الطفل، وتوثيق جميع الـ Endpoints الخاصة بقسم الروتين.
 
 ---
 
-## 1. كيفية التعامل مع الصور (Local Assets)
+## 📸 1. معمارية الصور (Local Assets)
 
-تم تصميم النظام ليعتمد على الـ **Local Assets** داخل تطبيق الـ Flutter لضمان سرعة التحميل وعدم استهلاك الإنترنت.
+النظام مصمم ليعتمد على الصور المحلية داخل تطبيق فلاتر لضمان سرعة الأداء وعدم استهلاك باقة الإنترنت. الباك إند **لا** يقوم بإرسال روابط سيرفر (Network URLs)، بل يرسل مسار الصورة كاسم لتستدعيه من داخل مجلد الـ Assets.
 
-### الخطوات المطلوبة في الـ Flutter:
-1. قم بإنشاء مجلد للصور داخل مشروع الـ Flutter، على سبيل المثال: `assets/routines/`.
-2. قم بإضافة الـ 11 صورة الخاصة بالروتين وسمّها بأسماء واضحة:
-   `wake-up.jpg`, `brush-teeth.jpg`, `eat.jpg`, `drink.jpg`, `dress.jpg`, `study.jpg`, `play.jpg`, `clean.jpg`, `bath.jpg`, `pray.jpg`, `sleep.jpg`.
-3. تأكد من تعريف هذا المجلد في ملف `pubspec.yaml` الخاص بـ Flutter:
+### المطلوب في تطبيق فلاتر:
+1. إنشاء مجلد للصور وتسميته: `assets/routines/`
+2. إضافة الصور الأساسية للمهام (مثل: `wake-up.jpg`, `brush-teeth.jpg`, `sleep.jpg`، إلخ).
+3. **مهم جداً:** إضافة صورة احتياطية باسم `default-task.jpg` في نفس المجلد. (هذه الصورة سيتم إرسالها تلقائياً من الباك إند كـ Fallback لأي مهمة يتم إضافتها بدون صورة مخصصة لمنع حدوث أي `Null Exception`).
+4. تعريف المجلد في ملف `pubspec.yaml`:
    ```yaml
    flutter:
      assets:
        - assets/routines/
    ```
-4. الـ Backend سيرسل لك مسار الصورة في الـ Response الخاص بالـ API كالتالي: `"imageUrl": "assets/routines/wake-up.jpg"`.
-5. لعرض الصورة في التطبيق، استخدم المسار القادم من الـ API مباشرة:
+5. عند استلام المسار من الـ API، يتم عرضه مباشرة كالتالي:
    ```dart
-   Image.asset(item.imageUrl)
+   Image.asset(item.imageUrl) // مثال: assets/routines/wake-up.jpg
    ```
 
 ---
 
-## 2. توثيق الـ Endpoints (API Reference)
+## 🔌 2. توثيق الـ Endpoints
 
-جميع الـ Endpoints تتطلب إرسال الـ Token في הـ Headers (`Authorization: Bearer <token>`).
-**ملاحظة هامة:** إذا كان المستخدم الأب (PARENT) هو من يقوم بالطلب، يجب إرسال `childId` لتحديد الطفل المستهدف. أما إذا كان الطفل (CHILD) هو المسجل دخول، فلا حاجة لإرسالها.
+⚠️ *جميع الـ Endpoints أدناه تتطلب إرسال الـ Token الخاص بالطفل في الـ Headers:* `Authorization: Bearer <token>`
 
-### 1. عرض مقترحات الروتين (Catalog)
-**الغرض:** جلب قائمة الأنشطة الجاهزة بصورها ليعرضها التطبيق ليختار منها الطفل/الأب.
-- **Endpoint:** `GET /routine/catalog`
-- **Response:**
+### 1. عرض مقترحات الروتين (Routine Catalog)
+**الغرض:** عرض قائمة المهام الجاهزة بالصور ليختار منها الطفل إضافتها لروتينه.
+- **المسار:** `GET /routine/catalog`
+- **الرد (Response):**
   ```json
   {
     "catalog": [
       {
-        "id": "12345-abcde",
+        "id": "uuid-here",
         "title": "Wake Up",
         "imageUrl": "assets/routines/wake-up.jpg",
-        "sortOrder": 1,
-        "createdAt": "2024-04-25T10:00:00Z"
-      },
-      ...
+        "sortOrder": 1
+      }
     ]
   }
   ```
 
 ### 2. إضافة مقترح لروتين الطفل
-**الغرض:** عندما يختار الطفل كارت من المقترحات (Catalog) ويضغط إضافة، يتم استدعاء هذا الـ API.
-- **Endpoint:** `POST /routine/catalog/:templateId`
-- **Body:** (فقط لو الأب هو اللي بيضيف للطفل)
-  ```json
-  {
-    "childId": "child-uuid-here" // Optional
-  }
-  ```
-- **Response (201 Created):**
-  ```json
-  {
-    "id": "new-task-uuid",
-    "title": "Wake Up",
-    "imageUrl": "assets/routines/wake-up.jpg",
-    "childId": "child-uuid",
-    "sortOrder": 1
-  }
-  ```
+**الغرض:** عند اختيار كارت من الـ Catalog وإضافته لجدول المهام الخاص بالطفل.
+- **المسار:** `POST /routine/catalog/:templateId`
+- **الرد (201 Created):** يرجع الكائن الذي تم إنشاؤه.
 
-### 3. إضافة مهمة مخصصة (Custom Task)
-**الغرض:** لو الطفل/الأب عايز يكتب مهمة جديدة بإيده مش موجودة في الـ Catalog.
-- **Endpoint:** `POST /routine/tasks`
+### 3. جلب جميع مهام الروتين
+**الغرض:** عرض المهام التي تم إضافتها لروتين الطفل (جدول المهام الثابت).
+- **المسار:** `GET /routine/tasks`
+- **الرد:** قائمة بكائنات الـ `routineTask`.
+
+### 4. إضافة مهمة مخصصة (Custom Task)
+**الغرض:** إنشاء مهمة جديدة غير موجودة في الـ Catalog.
+- **المسار:** `POST /routine/tasks`
 - **Body:**
   ```json
   {
     "title": "Go to the park",
     "scheduledTime": "16:00", // Optional
     "iconName": "park_icon", // Optional
-    "imageUrl": "assets/routines/park.jpg", // Optional (مسار الصورة للمهمة الجديدة)
-    "childId": "child-uuid" // Optional (فقط للأب)
+    "imageUrl": "assets/routines/park.jpg" // Optional
   }
   ```
+  *(ملاحظة: إذا تم إنشاء المهمة بدون `imageUrl`، سيقوم الباك إند تلقائياً بإرجاعها كـ `assets/routines/default-task.jpg` لمنع حدوث Crash في واجهة فلاتر).*
 
-### 4. عرض روتين اليوم (Today's Routine)
-**الغرض:** جلب مهام الطفل لليوم الحالي مع حالة كل مهمة (هل تم إنجازها أم لا). هذه الشاشة التي يعلم فيها الطفل على المهام.
-- **Endpoint:** `GET /routine/today`
-- **Query Params:** `?childId=uuid` (فقط للأب)
-- **Response:**
+### 5. مسح مهمة من الروتين
+**الغرض:** إزالة مهمة من جدول الطفل بشكل نهائي.
+- **المسار:** `DELETE /routine/tasks/:taskId`
+- **الرد:** `{"ok": true, "message": "Task deleted successfully"}`
+
+### 6. عرض روتين اليوم المباشر (Today's Routine)
+**الغرض:** هذه هي الشاشة الرئيسية للطفل، حيث تظهر المهام المطلوبة منه اليوم وحالة إنجازها.
+- **المسار:** `GET /routine/today`
+- **الرد:**
   ```json
   {
     "routine": [
@@ -96,18 +86,17 @@
         "id": "task-uuid",
         "title": "Wake Up",
         "imageUrl": "assets/routines/wake-up.jpg",
-        "scheduledTime": null,
-        "status": "PENDING", // PENDING | COMPLETED | SKIPPED
+        "status": "PENDING", // الحالة: PENDING أو COMPLETED أو SKIPPED
         "completedAt": null
       }
     ]
   }
   ```
 
-### 5. إنجاز المهمة (Complete Task)
-**الغرض:** عندما يضغط الطفل على "تم" أو الـ Checkmark للمهمة. (يعطي الطفل نقطتين/نجمتين 🌟).
-- **Endpoint:** `POST /routine/tasks/:taskId/complete`
-- **Response:**
+### 7. إنجاز المهمة (Complete Task) 🌟
+**الغرض:** عندما يقوم الطفل بالضغط على زر "تم" أو الـ Checkmark للمهمة، ليحصل على النقاط (Stars).
+- **المسار:** `POST /routine/tasks/:taskId/complete`
+- **الرد:**
   ```json
   {
     "ok": true,
@@ -116,34 +105,15 @@
   }
   ```
 
-### 6. تخطي المهمة (Skip Task)
-**الغرض:** عندما يقوم الطفل بعمل Skip للمهمة.
-- **Endpoint:** `POST /routine/tasks/:taskId/skip`
-- **Response:**
-  ```json
-  {
-    "ok": true,
-    "message": "Task skipped"
-  }
-  ```
+### 8. تخطي المهمة (Skip Task)
+**الغرض:** عندما يتم تحديد المهمة كمتخطاة لليوم الحالي.
+- **المسار:** `POST /routine/tasks/:taskId/skip`
+- **الرد:** `{"ok": true, "message": "Task skipped"}`
 
-### 7. مسح مهمة من الروتين
-**الغرض:** إزالة المهمة بالكامل من روتين الطفل (سواء كانت من الـ Catalog أو Custom).
-- **Endpoint:** `DELETE /routine/tasks/:taskId`
-- **Query Params:** `?childId=uuid` (فقط للأب)
-- **Response:**
-  ```json
-  {
-    "ok": true,
-    "message": "Task deleted successfully"
-  }
-  ```
-
-### 8. نسبة إنجاز الروتين لليوم (Progress)
-**الغرض:** جلب النسبة المئوية لإنجاز روتين اليوم (لعرض الـ Progress Bar).
-- **Endpoint:** `GET /routine/progress`
-- **Query Params:** `?childId=uuid` (فقط للأب)
-- **Response:**
+### 9. نسبة إنجاز الروتين لليوم (Progress)
+**الغرض:** جلب النسبة المئوية لإنجاز روتين اليوم (لعرض شريط التقدم ProgressBar).
+- **المسار:** `GET /routine/progress`
+- **الرد:**
   ```json
   {
     "totalTasks": 5,
@@ -152,3 +122,6 @@
     "date": "2024-04-25T00:00:00.000Z"
   }
   ```
+
+---
+*💡 **نصيحة أخيرة للمطور:** لتجنب أي أخطاء في الـ UI، يرجى التأكد دائماً أن مسارات الصور (Asset paths) مطابقة تماماً للمسارات المسجلة، وأن ملف `pubspec.yaml` يحتوي على تعريف مجلد `assets/routines/` بشكل صحيح، ولا تنسى إضافة الـ `default-task.jpg`.*
