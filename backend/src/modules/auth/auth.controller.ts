@@ -117,7 +117,60 @@ export const resetPasswordController = async (req: Request, res: Response, next:
 export const verifyEmailController = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { token } = req.query as { token: string };
-    const result = await verifyEmail(token);
-    return res.json(result);
-  } catch (err) { next(err); }
+    await verifyEmail(token);
+    
+    const html = `
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>تم التأكيد بنجاح</title>
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
+        .icon { font-size: 60px; margin-bottom: 20px; }
+        h1 { color: #6C63FF; margin-bottom: 10px; font-size: 24px; }
+        p { color: #555; line-height: 1.6; font-size: 16px; margin-bottom: 30px; }
+        .btn { display: inline-block; padding: 12px 30px; background-color: #6C63FF; color: white; text-decoration: none; border-radius: 25px; font-weight: bold; transition: background 0.3s; }
+        .btn:hover { background-color: #5750d1; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="icon">🎉</div>
+        <h1>تم تأكيد حسابك بنجاح!</h1>
+        <p>شكراً لك. تم تفعيل بريدك الإلكتروني بنجاح، يمكنك الآن العودة إلى التطبيق وتسجيل الدخول للبدء في استخدام كافة الميزات.</p>
+        <a href="#" onclick="window.close()" class="btn">إغلاق الصفحة</a>
+      </div>
+    </body>
+    </html>
+    `;
+    return res.send(html);
+  } catch (err: any) {
+    const errorHtml = `
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <title>فشل التأكيد</title>
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
+        .icon { font-size: 60px; margin-bottom: 20px; }
+        h1 { color: #e74c3c; margin-bottom: 10px; font-size: 24px; }
+        p { color: #555; line-height: 1.6; font-size: 16px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="icon">❌</div>
+        <h1>عذراً، فشل التأكيد</h1>
+        <p>${err?.message === "Invalid or expired token" ? "الرابط الذي استخدمته غير صالح أو منتهي الصلاحية. يرجى طلب رابط تأكيد جديد." : "حدث خطأ غير متوقع أثناء محاولة تأكيد حسابك."}</p>
+      </div>
+    </body>
+    </html>
+    `;
+    return res.status(400).send(errorHtml);
+  }
 };
