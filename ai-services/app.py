@@ -192,7 +192,7 @@ def text_to_speech(text: str, lang: str = "en") -> str:
         detected_lang = detect_language(text)
         if detected_lang == "ar":
             model_name = "canopylabs/orpheus-arabic-saudi"
-            voice = "abdullah"
+            voice = "noura"  # Options: noura, aisha, lulwa (female) | abdullah, fahad, sultan (male)
         else:
             model_name = "canopylabs/orpheus-english"
             voice = "male_1"
