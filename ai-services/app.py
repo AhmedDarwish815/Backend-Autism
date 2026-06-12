@@ -195,7 +195,7 @@ def text_to_speech(text: str, lang: str = "en") -> str:
             voice = "abdullah"
         else:
             model_name = "canopylabs/orpheus-v1-english"
-            voice = "male_1"
+            voice = "daniel"
 
         response = groq_client.audio.speech.create(
             model=model_name,
