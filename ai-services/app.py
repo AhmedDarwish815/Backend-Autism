@@ -121,42 +121,42 @@ def get_gemini_response(user_message: str, history: list, lang: str = "en") -> s
     return response.text
 
 
-def clean_whisper_hallucinations(text: str) -> str:
-    """Removes common Whisper hallucinations generated from silence or noise."""
-    hallucinations = [
-        "nancy qanqour",
-        "نانسي قنقر",
-        "amara.org",
-        "thanks for watching",
-        "شكرا على المشاهدة",
-        "شكرًا على المشاهدة",
-        "اشترك في القناة"
-    ]
-    lower_text = text.lower().strip()
-    
-    # If the text is exactly a hallucination or very short and contains it
-    for h in hallucinations:
-        if h in lower_text:
-            return ""
-            
-    return text.strip()
-
 def transcribe_audio(audio_bytes: bytes, lang="en"):
     try:
         transcription = groq_client.audio.transcriptions.create(
             file=("audio.m4a", audio_bytes),
             model="whisper-large-v3",
+            prompt="يرجى كتابة النص المسموع بدقة. إذا كان الصوت صامتاً أو مجرد ضجيج، لا تكتب أي شيء.",
             temperature=0,
             response_format="verbose_json"
         )
         
-        cleaned_text = clean_whisper_hallucinations(transcription.text)
+        text = transcription.text.strip()
         
-        # If whisper hallucinated due to silence, prompt Gemini to ask the user to repeat
-        if not cleaned_text:
-            return "لم أسمعك بوضوح، هل يمكنك تكرار ما قلته؟ (The user sent a silent/unclear audio, ask them politely to repeat)"
+        # 1. Check no_speech_prob to detect pure silence/noise
+        is_silent = False
+        segments = getattr(transcription, "segments", [])
+        if isinstance(transcription, dict):
+            segments = transcription.get("segments", [])
             
-        return cleaned_text
+        if segments:
+            probs = [s.get("no_speech_prob", 0) if isinstance(s, dict) else getattr(s, "no_speech_prob", 0) for s in segments]
+            if probs and (sum(probs) / len(probs)) > 0.6:
+                is_silent = True
+
+        # 2. Exact match fallback for common hallucinations
+        import re
+        clean_text = re.sub(r'[^\w\s]', '', text.lower()).strip()
+        known_hallucinations = {
+            "nancy qanqour", "نانسي قنقر", "amaraorg", "thanks for watching",
+            "شكرا على المشاهدة", "اشترك في القناة", "subscribe to the channel",
+            "شكرا"
+        }
+        
+        if is_silent or not text or clean_text in known_hallucinations:
+            return "عذراً، الصوت غير واضح أو يحتوي على ضجيج. هل يمكنك التحدث بوضوح وتكرار ما قلته؟"
+            
+        return text
     except Exception as e:
         raise Exception(f"Groq Error: {str(e)}")
 
