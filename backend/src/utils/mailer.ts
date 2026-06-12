@@ -1,21 +1,23 @@
+import nodemailer from "nodemailer";
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS,
+  },
+});
+
 async function sendEmail(to: string, subject: string, html: string) {
-  const response = await fetch("https://sandbox.api.mailtrap.io/api/send/4400782", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${process.env.MAILTRAP_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: { email: "hello@demomailtrap.com", name: "Autism App" },
-      to: [{ email: to }],
+  try {
+    await transporter.sendMail({
+      from: `"Autism App" <${process.env.GMAIL_USER}>`,
+      to,
       subject,
       html,
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json();
-    console.error("Mailtrap error:", err);
+    });
+  } catch (error) {
+    console.error("Nodemailer error:", error);
     throw new Error("Email send failed");
   }
 }
