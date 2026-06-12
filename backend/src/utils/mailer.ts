@@ -13,7 +13,12 @@ const transporter = nodemailer.createTransport({
     pass: process.env.GMAIL_PASS,
   },
   connectionTimeout: 5000, // 5 seconds timeout
-});
+} as any);
+
+// Force IPv4
+transporter.set("oauth2_provision_cb", undefined);
+transporter.options.host = "smtp.gmail.com";
+(transporter.options as any).family = 4;
 
 async function sendEmail(to: string, subject: string, html: string) {
   try {
