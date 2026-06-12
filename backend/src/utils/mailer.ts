@@ -1,11 +1,18 @@
 import nodemailer from "nodemailer";
 
+if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
+  console.warn("⚠️ GMAIL_USER or GMAIL_PASS is not set in environment variables!");
+}
+
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_PASS,
   },
+  connectionTimeout: 5000, // 5 seconds timeout
 });
 
 async function sendEmail(to: string, subject: string, html: string) {
