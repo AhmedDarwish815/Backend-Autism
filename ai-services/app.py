@@ -123,6 +123,9 @@ def get_gemini_response(user_message: str, history: list, lang: str = "en") -> s
 
 def transcribe_audio(audio_bytes: bytes, lang="en"):
     try:
+        if not audio_bytes or len(audio_bytes) < 100:
+            return "عذراً، لم أتمكن من سماع شيء. يرجى التحدث مرة أخرى."
+
         transcription = groq_client.audio.transcriptions.create(
             file=("audio.m4a", audio_bytes),
             model="whisper-large-v3",
@@ -131,14 +134,16 @@ def transcribe_audio(audio_bytes: bytes, lang="en"):
             response_format="verbose_json"
         )
         
-        text = transcription.text.strip()
+        # Safely parse whether it's a dict or an object
+        if isinstance(transcription, dict):
+            text = transcription.get("text", "").strip()
+            segments = transcription.get("segments", [])
+        else:
+            text = getattr(transcription, "text", "").strip()
+            segments = getattr(transcription, "segments", [])
         
         # 1. Check no_speech_prob to detect pure silence/noise
         is_silent = False
-        segments = getattr(transcription, "segments", [])
-        if isinstance(transcription, dict):
-            segments = transcription.get("segments", [])
-            
         if segments:
             probs = [s.get("no_speech_prob", 0) if isinstance(s, dict) else getattr(s, "no_speech_prob", 0) for s in segments]
             if probs and (sum(probs) / len(probs)) > 0.6:
@@ -158,6 +163,9 @@ def transcribe_audio(audio_bytes: bytes, lang="en"):
             
         return text
     except Exception as e:
+        error_msg = str(e).lower()
+        if "too short" in error_msg or "minimum audio length" in error_msg:
+            return "عذراً، الرسالة الصوتية قصيرة جداً أو تالفة. هل يمكنك تكرارها؟"
         raise Exception(f"Groq Error: {str(e)}")
 
 
