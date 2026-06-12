@@ -157,12 +157,33 @@ def text_to_speech(text: str, lang: str = "en") -> str:
             input=text,
         )
 
+        audio_data = bytearray(response.read())
+
+        # Fix the WAV header if it contains 0xFFFFFFFF for chunk sizes (streaming artifact)
+        import struct
+        if len(audio_data) >= 44 and audio_data[0:4] == b"RIFF":
+            # Fix RIFF chunk size
+            audio_data[4:8] = struct.pack('<I', len(audio_data) - 8)
+            
+            # Find and fix the 'data' chunk size
+            offset = 12
+            while offset < len(audio_data) - 8:
+                chunk_id = audio_data[offset:offset+4]
+                chunk_size = struct.unpack('<I', audio_data[offset+4:offset+8])[0]
+                if chunk_id == b'data':
+                    if chunk_size == 0xFFFFFFFF:
+                        data_chunk_size = len(audio_data) - offset - 8
+                        audio_data[offset+4:offset+8] = struct.pack('<I', data_chunk_size)
+                    break
+                if chunk_size == 0xFFFFFFFF:
+                    break
+                offset += 8 + chunk_size
+
         speech_file_path = Path(__file__).parent / "speech.wav"
         with open(speech_file_path, "wb") as f:
-            f.write(response.read())
+            f.write(audio_data)
 
-        with open(speech_file_path, "rb") as f:
-            audio_b64 = base64.b64encode(f.read()).decode("utf-8")
+        audio_b64 = base64.b64encode(audio_data).decode("utf-8")
 
         return audio_b64
     except Exception as e:
