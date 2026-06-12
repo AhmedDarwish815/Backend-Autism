@@ -69,7 +69,7 @@ export async function sendVerificationEmail(to: string, token: string) {
     "تأكيد حسابك - تطبيق دعم التوحد",
     `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; direction: rtl; text-align: right;">
-      <div style="background-color: #6C63FF; padding: 40px 20px; text-align: center;">
+      <div style="background-color: #00A8CC; padding: 40px 20px; text-align: center;">
         <h1 style="color: white; margin: 0; font-size: 28px;">أهلاً بك في مجتمعنا! 💙</h1>
       </div>
       <div style="padding: 40px 30px; background-color: #ffffff;">
@@ -81,14 +81,14 @@ export async function sendVerificationEmail(to: string, token: string) {
           للوصول إلى جميع الميزات، يُرجى تأكيد بريدك الإلكتروني من خلال الضغط على الزر أدناه:
         </p>
         <div style="text-align: center; margin: 40px 0;">
-          <a href="${link}" style="display: inline-block; padding: 14px 40px; background-color: #6C63FF; color: white; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 50px; box-shadow: 0 4px 6px rgba(108, 99, 255, 0.2);">
+          <a href="${link}" style="display: inline-block; padding: 14px 40px; background-color: #00A8CC; color: white; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 50px; box-shadow: 0 4px 6px rgba(0, 168, 204, 0.2);">
             تأكيد الحساب الآن
           </a>
         </div>
         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
         <p style="font-size: 13px; color: #999; text-align: center;">
           هل تواجه مشكلة مع الزر؟ يمكنك نسخ هذا الرابط ولصقه في متصفحك:<br>
-          <a href="${link}" style="color: #6C63FF; word-break: break-all;">${link}</a>
+          <a href="${link}" style="color: #00A8CC; word-break: break-all;">${link}</a>
         </p>
       </div>
     </div>

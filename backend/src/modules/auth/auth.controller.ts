@@ -119,7 +119,7 @@ export const verifyEmailController = async (req: Request, res: Response, next: N
     const { token } = req.query as { token: string };
     await verifyEmail(token);
     
-    const html = `
+    const html = \`
     <!DOCTYPE html>
     <html lang="ar" dir="rtl">
     <head>
@@ -127,13 +127,12 @@ export const verifyEmailController = async (req: Request, res: Response, next: N
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>تم التأكيد بنجاح</title>
       <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f8ff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; max-width: 400px; width: 90%; border-top: 5px solid #00A8CC; }
         .icon { font-size: 60px; margin-bottom: 20px; }
-        h1 { color: #6C63FF; margin-bottom: 10px; font-size: 24px; }
+        h1 { color: #00A8CC; margin-bottom: 10px; font-size: 24px; }
         p { color: #555; line-height: 1.6; font-size: 16px; margin-bottom: 30px; }
-        .btn { display: inline-block; padding: 12px 30px; background-color: #6C63FF; color: white; text-decoration: none; border-radius: 25px; font-weight: bold; transition: background 0.3s; }
-        .btn:hover { background-color: #5750d1; }
+        .notice { display: inline-block; padding: 12px 30px; background-color: #e6f7fa; color: #008ba8; border-radius: 8px; font-weight: bold; font-size: 14px; }
       </style>
     </head>
     <body>
@@ -141,22 +140,22 @@ export const verifyEmailController = async (req: Request, res: Response, next: N
         <div class="icon">🎉</div>
         <h1>تم تأكيد حسابك بنجاح!</h1>
         <p>شكراً لك. تم تفعيل بريدك الإلكتروني بنجاح، يمكنك الآن العودة إلى التطبيق وتسجيل الدخول للبدء في استخدام كافة الميزات.</p>
-        <a href="#" onclick="window.close()" class="btn">إغلاق الصفحة</a>
+        <div class="notice">يمكنك إغلاق هذه الصفحة بأمان الآن</div>
       </div>
     </body>
     </html>
-    `;
+    \`;
     return res.send(html);
   } catch (err: any) {
-    const errorHtml = `
+    const errorHtml = \`
     <!DOCTYPE html>
     <html lang="ar" dir="rtl">
     <head>
       <meta charset="UTF-8">
       <title>فشل التأكيد</title>
       <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f8ff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; max-width: 400px; width: 90%; border-top: 5px solid #e74c3c; }
         .icon { font-size: 60px; margin-bottom: 20px; }
         h1 { color: #e74c3c; margin-bottom: 10px; font-size: 24px; }
         p { color: #555; line-height: 1.6; font-size: 16px; }
@@ -166,11 +165,11 @@ export const verifyEmailController = async (req: Request, res: Response, next: N
       <div class="container">
         <div class="icon">❌</div>
         <h1>عذراً، فشل التأكيد</h1>
-        <p>${err?.message === "Invalid or expired token" ? "الرابط الذي استخدمته غير صالح أو منتهي الصلاحية. يرجى طلب رابط تأكيد جديد." : "حدث خطأ غير متوقع أثناء محاولة تأكيد حسابك."}</p>
+        <p>\${err?.message === "Invalid or expired token" ? "الرابط الذي استخدمته غير صالح أو منتهي الصلاحية. يرجى طلب رابط تأكيد جديد." : "حدث خطأ غير متوقع أثناء محاولة تأكيد حسابك."}</p>
       </div>
     </body>
     </html>
-    `;
+    \`;
     return res.status(400).send(errorHtml);
   }
 };
