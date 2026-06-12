@@ -10,6 +10,7 @@ from flask_cors import CORS
 from sklearn.preprocessing import LabelEncoder
 from dotenv import load_dotenv
 
+import re
 import google.generativeai as genai
 from groq import Groq
 
@@ -81,7 +82,7 @@ def safe_transform(le, value):
 
 # ─── 2. CHATBOT AI SETUP ───────────────────────────────────────────────────────
 
-SYSTEM_PROMPT_EN = """
+SYSTEM_PROMPT = """
 You are Autimate, a compassionate and specialized AI assistant designed specifically 
 to support individuals with Autism Spectrum Disorder (ASD), their caregivers, 
 and family members.
@@ -96,30 +97,23 @@ Your core guidelines:
   behavioral strategies, caregiver support, emotional regulation, and ASD education.
 - Always encourage and validate the user's feelings.
 - Keep responses concise — ideally 2 to 4 short sentences unless more detail is needed.
-- If the user writes in Arabic, respond in Arabic with the same guidelines.
+
+CRITICAL INSTRUCTION FOR LANGUAGE:
+- You MUST reply in the exact same language as the user's message.
+- If the user writes or speaks in Arabic, you MUST reply entirely in Arabic.
+- If the user writes or speaks in English, you MUST reply entirely in English.
+- Do not mix languages unless explicitly asked.
 """
 
-SYSTEM_PROMPT_AR = """
-أنت "أوتيمت"، مساعد ذكاء اصطناعي متخصص ومتعاطف، مصمم خصيصاً لدعم 
-الأفراد المصابين باضطراب طيف التوحد (ASD) ومقدمي الرعاية وأفراد الأسرة.
-
-إرشاداتك الأساسية:
-- استخدم جملاً بسيطة وواضحة وقصيرة. تجنب اللغة المعقدة.
-- كن صبوراً وهادئاً وإيجابياً في كل رد.
-- تجنب السخرية أو التعابير المجازية التي قد تربك الأفراد المصابين بالتوحد.
-- إذا بدا المستخدم في ضيق، استجب بالتعاطف والطمأنينة أولاً.
-- ركز على النصائح العملية والملموسة عند السؤال عن موضوعات التوحد.
-- تخصصاتك: الروتين اليومي، الحساسيات الحسية، التواصل الاجتماعي، 
-  استراتيجيات السلوك، دعم مقدم الرعاية، التنظيم العاطفي، والتعليم حول ASD.
-- شجع المستخدم دائماً واعترف بمشاعره.
-- اجعل الردود موجزة — من جملتين إلى أربع جمل قصيرة ما لم يكن هناك حاجة لمزيد من التفاصيل.
-"""
+def detect_language(text: str) -> str:
+    """Returns 'ar' if the text contains Arabic characters, else 'en'."""
+    if re.search("[\u0600-\u06FF]", text):
+        return "ar"
+    return "en"
 
 def get_gemini_response(user_message: str, history: list, lang: str = "en") -> str:
-    system_prompt = SYSTEM_PROMPT_AR if lang == "ar" else SYSTEM_PROMPT_EN
-
     model = genai.GenerativeModel(
-        model_name="gemini-2.5-flash", system_instruction=system_prompt
+        model_name="gemini-2.5-flash", system_instruction=SYSTEM_PROMPT
     )
 
     chat = model.start_chat(history=history)
@@ -133,8 +127,7 @@ def transcribe_audio(audio_bytes: bytes, lang="en"):
             file=("audio.m4a", audio_bytes),
             model="whisper-large-v3",
             temperature=0,
-            response_format="verbose_json",
-            language="ar" if lang == "ar" else "en",
+            response_format="verbose_json"
         )
         return transcription.text
     except Exception as e:
@@ -143,7 +136,8 @@ def transcribe_audio(audio_bytes: bytes, lang="en"):
 
 def text_to_speech(text: str, lang: str = "en") -> str:
     try:
-        if lang == "ar":
+        detected_lang = detect_language(text)
+        if detected_lang == "ar":
             model_name = "canopylabs/orpheus-arabic-saudi"
             voice = "abdullah"
         else:
