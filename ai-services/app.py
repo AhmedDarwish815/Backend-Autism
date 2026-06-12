@@ -117,7 +117,19 @@ def get_gemini_response(user_message: str, history: list, lang: str = "en") -> s
             model_name="gemini-2.5-flash", system_instruction=SYSTEM_PROMPT
         )
 
-        chat = model.start_chat(history=history)
+        # Sanitize history: Gemini strictly requires alternating roles starting with 'user'
+        clean_history = []
+        expected_role = "user"
+        for msg in history:
+            if msg.get("role") == expected_role:
+                clean_history.append(msg)
+                expected_role = "model" if expected_role == "user" else "user"
+                
+        # If the last message in history is 'user', drop it because the NEXT message being sent is also 'user'
+        if clean_history and clean_history[-1].get("role") == "user":
+            clean_history.pop()
+
+        chat = model.start_chat(history=clean_history)
         response = chat.send_message(user_message)
         return response.text
     except Exception as e:
