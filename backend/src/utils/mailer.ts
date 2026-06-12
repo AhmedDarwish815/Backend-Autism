@@ -17,7 +17,7 @@ const transporter = nodemailer.createTransport({
 
 // Force IPv4
 transporter.set("oauth2_provision_cb", undefined);
-transporter.options.host = "smtp.gmail.com";
+(transporter.options as any).host = "smtp.gmail.com";
 (transporter.options as any).family = 4;
 
 async function sendEmail(to: string, subject: string, html: string) {
