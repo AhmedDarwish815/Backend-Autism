@@ -99,25 +99,14 @@ export const sendMessage = async (
         throw Object.assign(new Error("Chat session not found"), { status: 404 });
     }
 
-    const userMessage = await prisma.chatMessage.create({
-        data: {
-            sessionId,
-            role: "user",
-            content: content.trim(),
-        },
-        select: {
-            id: true,
-            role: true,
-            content: true,
-            createdAt: true,
-        },
-    });
-
+    // Fetch last 20 messages for context limit
     const history = await prisma.chatMessage.findMany({
         where: { sessionId },
         select: { role: true, content: true },
-        orderBy: { createdAt: "asc" },
+        orderBy: { createdAt: "desc" },
+        take: 20,
     });
+    history.reverse();
 
     const formattedHistory = history.map((msg) => ({
         role: msg.role === "user" ? "user" : "model",
@@ -146,19 +135,17 @@ export const sendMessage = async (
 
     const data = await response.json() as any;
 
-    const assistantMessage = await prisma.chatMessage.create({
-        data: {
-            sessionId,
-            role: "assistant",
-            content: data.reply,
-        },
-        select: {
-            id: true,
-            role: true,
-            content: true,
-            createdAt: true,
-        },
-    });
+    // Insert both user and assistant messages in a transaction to ensure DB consistency
+    const [userMessage, assistantMessage] = await prisma.$transaction([
+        prisma.chatMessage.create({
+            data: { sessionId, role: "user", content: content.trim() },
+            select: { id: true, role: true, content: true, createdAt: true },
+        }),
+        prisma.chatMessage.create({
+            data: { sessionId, role: "assistant", content: data.reply },
+            select: { id: true, role: true, content: true, createdAt: true },
+        })
+    ]);
 
     await prisma.chatSession.update({
         where: { id: sessionId },
@@ -205,11 +192,14 @@ export const sendVoiceMessage = async (
         throw Object.assign(new Error("Chat session not found"), { status: 404 });
     }
 
+    // Fetch last 20 messages for context limit
     const history = await prisma.chatMessage.findMany({
         where: { sessionId },
         select: { role: true, content: true },
-        orderBy: { createdAt: "asc" },
+        orderBy: { createdAt: "desc" },
+        take: 20,
     });
+    history.reverse();
 
     const formattedHistory = history.map((msg) => ({
         role: msg.role === "user" ? "user" : "model",
@@ -220,7 +210,7 @@ export const sendVoiceMessage = async (
     const voiceEndpoint = `${aiServiceBaseUrl}/api/voice`;
 
     const formData = new FormData();
-    const blob = new Blob([audioBuffer as any], { type: "audio/wav" });
+    const blob = new Blob([audioBuffer as any], { type: "application/octet-stream" });
     formData.append("audio", blob, filename);
     formData.append("session_id", sessionId);
     formData.append("lang", "ar");

@@ -112,13 +112,19 @@ def detect_language(text: str) -> str:
     return "en"
 
 def get_gemini_response(user_message: str, history: list, lang: str = "en") -> str:
-    model = genai.GenerativeModel(
-        model_name="gemini-2.5-flash", system_instruction=SYSTEM_PROMPT
-    )
+    try:
+        model = genai.GenerativeModel(
+            model_name="gemini-2.5-flash", system_instruction=SYSTEM_PROMPT
+        )
 
-    chat = model.start_chat(history=history)
-    response = chat.send_message(user_message)
-    return response.text
+        chat = model.start_chat(history=history)
+        response = chat.send_message(user_message)
+        return response.text
+    except Exception as e:
+        print(f"Gemini Error: {str(e)}")
+        if lang == "ar":
+            return "عذراً، أواجه مشكلة تقنية حالياً في معالجة طلبك. هل يمكنك المحاولة مرة أخرى لاحقاً؟"
+        return "Sorry, I am facing a technical issue right now. Can you try again later?"
 
 
 def transcribe_audio(audio_bytes: bytes, lang="en"):
@@ -208,10 +214,7 @@ def text_to_speech(text: str, lang: str = "en") -> str:
                     break
                 offset += 8 + chunk_size
 
-        speech_file_path = Path(__file__).parent / "speech.wav"
-        with open(speech_file_path, "wb") as f:
-            f.write(audio_data)
-
+        # Encode directly to base64 in memory without writing to disk
         audio_b64 = base64.b64encode(audio_data).decode("utf-8")
 
         return audio_b64
