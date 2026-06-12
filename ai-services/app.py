@@ -160,8 +160,8 @@ def transcribe_audio(audio_bytes: bytes, lang="en"):
         clean_text = re.sub(r'[^\w\s]', '', text.lower()).strip()
         known_hallucinations = {
             "nancy qanqour", "نانسي قنقر", "amaraorg", "thanks for watching",
-            "شكرا على المشاهدة", "اشترك في القناة", "subscribe to the channel",
-            "شكرا"
+            "thank you for watching", "شكرا على المشاهدة", "اشترك في القناة", 
+            "subscribe to the channel", "شكرا"
         }
         
         if is_silent or not text or clean_text in known_hallucinations:
