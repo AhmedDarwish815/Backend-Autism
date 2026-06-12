@@ -23,9 +23,9 @@ async function sendEmail(to: string, subject: string, html: string) {
       subject,
       html,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Nodemailer error:", error);
-    throw new Error("Email send failed");
+    throw new Error(`Email send failed: ${error.message || error}`);
   }
 }
 
